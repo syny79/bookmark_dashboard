@@ -24,7 +24,6 @@
             color: var(--text-main);
         }
 
-        /* 썸네일 컨테이너 16:9 비율 유지 */
         .thumbnail-container {
             position: relative;
             width: 100%;
@@ -71,13 +70,13 @@
             <div class="flex items-center gap-2 sm:gap-4">
                 <!-- 로그인 상태 표시 영역 -->
                 <div id="auth-section" class="flex items-center gap-2">
-                    <button onclick="window.handleGoogleLogin()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm flex items-center gap-2">
+                    <button onclick="window.handleGoogleLogin()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer">
                         <i class="fab fa-google"></i> 구글 로그인
                     </button>
                 </div>
                 
                 <!-- 데이터 관리 및 백업 버튼 -->
-                <button onclick="openDataModal()" class="px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-2 border border-transparent hover:border-indigo-100 shadow-sm" title="데이터 관리 및 백업">
+                <button onclick="openDataModal()" class="px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-2 border border-transparent hover:border-indigo-100 shadow-sm cursor-pointer" title="데이터 관리 및 백업">
                     <i class="fas fa-cloud text-lg"></i> <span class="hidden sm:inline text-sm font-bold">데이터 관리</span>
                 </button>
             </div>
@@ -101,7 +100,7 @@
                     </select>
                 </div>
                 
-                <button onclick="openCategoryModal()" class="w-full py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2 border border-indigo-100">
+                <button onclick="openCategoryModal()" class="w-full py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2 border border-indigo-100 cursor-pointer">
                     <i class="fas fa-plus"></i> 새 카테고리
                 </button>
             </div>
@@ -261,7 +260,7 @@
                         <i class="fas fa-save"></i> 수동 백업 및 복구
                     </h4>
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="exportDataToJson()" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-colors text-indigo-700">
+                        <button onclick="exportDataToJson()" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-colors text-indigo-700 cursor-pointer">
                             <i class="fas fa-file-download text-2xl mb-2"></i>
                             <span class="text-sm font-bold">데이터 내보내기</span>
                             <span class="text-xs opacity-70 mt-1">.json 백업 파일</span>
@@ -275,6 +274,21 @@
                         </label>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 커스텀 삭제 확인 모달 (alert/confirm 대체) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center transform scale-95 transition-transform duration-200" id="confirm-modal-content">
+            <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-xl"></i>
+            </div>
+            <h3 id="confirm-modal-title" class="text-base font-bold text-gray-900 mb-2">정말 삭제하시겠습니까?</h3>
+            <p id="confirm-modal-desc" class="text-xs text-gray-500 mb-6 leading-relaxed">이 작업은 취소할 수 없습니다.</p>
+            <div class="flex gap-3 justify-center">
+                <button id="confirm-cancel-btn" class="px-4 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer">취소</button>
+                <button id="confirm-ok-btn" class="px-4 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm cursor-pointer">삭제</button>
             </div>
         </div>
     </div>
@@ -392,10 +406,10 @@
                             ${bookmarkCount}
                         </div>
                         <div class="hidden group-hover:flex items-center gap-1">
-                            <button onclick="openCategoryModal('${cat.id}')" class="text-gray-400 hover:text-indigo-600 w-6 h-6 rounded flex items-center justify-center bg-white border border-gray-200 shadow-sm transition-colors" title="카테고리 수정">
+                            <button onclick="openCategoryModal('${cat.id}')" class="text-gray-400 hover:text-indigo-600 w-6 h-6 rounded flex items-center justify-center bg-white border border-gray-200 shadow-sm transition-colors cursor-pointer" title="카테고리 수정">
                                 <i class="fas fa-edit text-[10px]"></i>
                             </button>
-                            <button onclick="deleteCategory('${cat.id}')" class="text-gray-400 hover:text-red-600 w-6 h-6 rounded flex items-center justify-center bg-white border border-gray-200 shadow-sm transition-colors" title="카테고리 삭제">
+                            <button onclick="deleteCategory('${cat.id}')" class="text-gray-400 hover:text-red-600 w-6 h-6 rounded flex items-center justify-center bg-white border border-gray-200 shadow-sm transition-colors cursor-pointer" title="카테고리 삭제">
                                 <i class="fas fa-trash-alt text-[10px]"></i>
                             </button>
                         </div>
@@ -442,13 +456,13 @@
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="openBookmarkModal('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm flex items-center gap-1.5">
+                        <button onclick="openBookmarkModal('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
                             <i class="fas fa-plus"></i> 링크 추가
                         </button>
-                        <button onclick="openCategoryModal('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors flex items-center gap-1" title="카테고리 수정">
+                        <button onclick="openCategoryModal('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer" title="카테고리 수정">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="deleteCategory('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg transition-colors flex items-center gap-1" title="카테고리 삭제">
+                        <button onclick="deleteCategory('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg transition-colors flex items-center gap-1 cursor-pointer" title="카테고리 삭제">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -463,7 +477,7 @@
                             <i class="fas fa-link text-2xl text-gray-300"></i>
                         </div>
                         <p class="text-gray-500 text-sm mb-4 font-medium">저장된 링크가 없습니다.</p>
-                        <button onclick="openBookmarkModal('${category.id}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-5 py-2.5 rounded-lg transition-colors border border-indigo-100 shadow-sm">첫 번째 링크 추가하기</button>
+                        <button onclick="openBookmarkModal('${category.id}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-5 py-2.5 rounded-lg transition-colors border border-indigo-100 shadow-sm cursor-pointer">첫 번째 링크 추가하기</button>
                     </div>
                 `;
             } else {
@@ -503,13 +517,13 @@
                             <div class="px-3 py-2 bg-gray-50 border-t border-gray-100 flex justify-between items-center mt-auto">
                                 <span class="text-[9px] text-gray-400 font-medium flex items-center gap-1"><i class="far fa-clock"></i>${dateStr}</span>
                                 <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-gray-50 rounded-md">
-                                    <button onclick="copyToClipboard('${escapeHtml(bm.url)}'); event.stopPropagation();" class="text-gray-500 hover:text-indigo-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors" title="링크 복사">
+                                    <button onclick="copyToClipboard('${escapeHtml(bm.url)}'); event.stopPropagation();" class="text-gray-500 hover:text-indigo-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors cursor-pointer" title="링크 복사">
                                         <i class="far fa-copy text-[10px]"></i>
                                     </button>
-                                    <button onclick="openBookmarkModal('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-blue-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors" title="수정">
+                                    <button onclick="openBookmarkModal('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-blue-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors cursor-pointer" title="수정">
                                         <i class="far fa-edit text-[10px]"></i>
                                     </button>
-                                    <button onclick="deleteBookmark('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-red-600 hover:bg-red-100 w-6 h-6 rounded flex items-center justify-center transition-colors" title="삭제">
+                                    <button onclick="deleteBookmark('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-red-600 hover:bg-red-100 w-6 h-6 rounded flex items-center justify-center transition-colors cursor-pointer" title="삭제">
                                         <i class="far fa-trash-alt text-[10px]"></i>
                                     </button>
                                 </div>
@@ -649,15 +663,49 @@
             closeCategoryModal();
         }
 
+        function showConfirm(title, desc, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            const content = document.getElementById('confirm-modal-content');
+            const titleEl = document.getElementById('confirm-modal-title');
+            const descEl = document.getElementById('confirm-modal-desc');
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+            titleEl.textContent = title;
+            descEl.textContent = desc;
+
+            const close = () => {
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); }, 200);
+            };
+
+            okBtn.onclick = () => {
+                close();
+                onConfirm();
+            };
+            cancelBtn.onclick = close;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+
         function deleteCategory(id) {
-            if (confirm("정말 이 카테고리를 삭제하시겠습니까?\n저장된 모든 링크가 함께 삭제됩니다.")) {
-                categories = categories.filter(cat => cat.id !== id);
-                if (selectedCategoryId === id) {
-                    selectedCategoryId = null;
+            showConfirm(
+                "카테고리 삭제", 
+                "정말 이 카테고리를 삭제하시겠습니까? 저장된 모든 링크가 함께 삭제됩니다.",
+                () => {
+                    categories = categories.filter(cat => cat.id !== id);
+                    if (selectedCategoryId === id) {
+                        selectedCategoryId = null;
+                    }
+                    saveData();
+                    showToast('카테고리가 삭제되었습니다.', 'info');
                 }
-                saveData();
-                showToast('카테고리가 삭제되었습니다.', 'info');
-            }
+            );
         }
 
         let currentMetadata = null;
@@ -692,8 +740,8 @@
                 if (bookmark.image && bookmark.image !== 'null') {
                     document.getElementById('preview-img').src = bookmark.image;
                 } else {
-                    const domainInitials = bookmark.domain.charAt(0).toUpperCase();
-                    const color = stringToColor(bookmark.domain);
+                    const domainInitials = (bookmark.domain || "?").charAt(0).toUpperCase();
+                    const color = stringToColor(bookmark.domain || bookmark.url);
                     document.getElementById('preview-img').src = `https://placehold.co/400x300/${color.replace('#','')}/FFFFFF?text=${domainInitials}`;
                 }
                 
@@ -738,6 +786,7 @@
         function openDataModal() {
             const modal = document.getElementById('data-modal');
             const content = document.getElementById('data-modal-content');
+            if (!modal || !content) return;
             modal.classList.remove('hidden');
             setTimeout(() => {
                 content.classList.remove('scale-95');
@@ -748,6 +797,7 @@
         function closeDataModal() {
             const modal = document.getElementById('data-modal');
             const content = document.getElementById('data-modal-content');
+            if (!modal || !content) return;
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
             setTimeout(() => {
@@ -783,7 +833,7 @@
                     showToast('올바르지 않은 백업 파일 형식입니다.', 'error');
                 }
             };
-            if (event.target.files[0]) {
+            if (event.target.files && event.target.files[0]) {
                 fileReader.readAsText(event.target.files[0]);
             }
         }
@@ -942,12 +992,16 @@
             const categoryIndex = categories.findIndex(c => c.id === categoryId);
             if (categoryIndex === -1) return;
 
-            if (confirm("이 링크를 삭제하시겠습니까?")) {
-                categories[categoryIndex].bookmarks = categories[categoryIndex].bookmarks.filter(b => b.id !== bookmarkId);
-                categories[categoryIndex].updatedAt = Date.now();
-                saveData();
-                showToast('링크가 삭제되었습니다.', 'info');
-            }
+            showConfirm(
+                "링크 삭제",
+                "이 링크를 삭제하시겠습니까?",
+                () => {
+                    categories[categoryIndex].bookmarks = categories[categoryIndex].bookmarks.filter(b => b.id !== bookmarkId);
+                    categories[categoryIndex].updatedAt = Date.now();
+                    saveData();
+                    showToast('링크가 삭제되었습니다.', 'info');
+                }
+            );
         }
 
         function escapeHtml(unsafe) {
@@ -1058,10 +1112,8 @@
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let db, auth, currentUser;
-        let isFirstLoad = true;
         let unsubscribeSnapshot = null;
 
-        // Firebase 설정 (복사해두신 본인 프로젝트 설정)
         const firebaseConfig = {
             apiKey: "AIzaSyBFSckLj-kSpOx7ZlD9YPYLeK5y8BPHTX4",
             authDomain: "bookmark-dashboard-345cc.firebaseapp.com",
@@ -1106,7 +1158,7 @@
                     <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5">
                         ${photoURL ? `<img src="${photoURL}" class="w-6 h-6 rounded-full">` : '<i class="fas fa-user-circle text-indigo-600 text-lg"></i>'}
                         <span class="text-xs font-bold text-indigo-900 max-w-[120px] sm:max-w-[180px] truncate">${escapeHtml(displayName)}</span>
-                        <button onclick="window.handleGoogleLogout()" class="ml-1 text-xs text-red-500 hover:text-red-700 font-bold hover:underline">로그아웃</button>
+                        <button onclick="window.handleGoogleLogout()" class="ml-1 text-xs text-red-500 hover:text-red-700 font-bold hover:underline cursor-pointer">로그아웃</button>
                     </div>
                 `;
                 updateCloudSyncStatus('connected', displayName);
@@ -1137,15 +1189,15 @@
                     <span class="relative flex h-3 w-3">
                       <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
                     </span>
-                    <span class="text-yellow-700 font-bold">로그인 필요</span>
-                    <button onclick="window.handleGoogleLogin()" class="ml-2 px-2 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 transition-colors font-bold">구글 로그인하기</button>
+                    <span class="text-yellow-700 font-bold">로그인이 필요합니다</span>
+                    <button onclick="window.handleGoogleLogin()" class="ml-2 px-2.5 py-1 bg-indigo-600 text-white text-xs rounded-md hover:bg-indigo-700 transition-colors font-bold cursor-pointer">구글 로그인하기</button>
                 `;
             } else {
                 statusEl.innerHTML = `
                     <span class="relative flex h-3 w-3">
                       <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                     </span>
-                    <span class="text-red-600 font-bold">연결 오류</span>
+                    <span class="text-red-600 font-bold">연결 오류 (${escapeHtml(extraInfo)})</span>
                 `;
             }
         }
@@ -1168,7 +1220,7 @@
                 if (error.code === 'auth/popup-blocked') {
                     showToast('브라우저의 팝업 차단을 해제해 주세요!', 'error');
                 } else if (error.code === 'auth/unauthorized-domain') {
-                    showToast('Firebase 콘솔에 syny79.github.io 도메인이 등록되지 않았습니다.', 'error');
+                    showToast('Firebase 콘솔에 syny79.github.io 도메인이 승인되지 않았습니다.', 'error');
                 } else if (error.code === 'auth/operation-not-allowed') {
                     showToast('Firebase 콘솔 -> Authentication에서 Google 로그인 제공업체를 [활성화]해 주세요!', 'error');
                 } else if (error.code !== 'auth/popup-closed-by-user') {
@@ -1221,10 +1273,14 @@
             }
         }
 
-        // 글로벌 window에 함수 등록하여 onclick 이벤트와 연결
+        // 글로벌 window 객체에 연결
         window.handleGoogleLogin = handleGoogleLogin;
         window.handleGoogleLogout = handleGoogleLogout;
         window.saveToCloud = saveToCloud;
+        window.openDataModal = openDataModal;
+        window.closeDataModal = closeDataModal;
+        window.exportDataToJson = exportDataToJson;
+        window.importDataFromJson = importDataFromJson;
 
         initFirebase();
     </script>
