@@ -71,7 +71,9 @@
             <div class="flex items-center gap-2 sm:gap-4">
                 <!-- 로그인 상태 표시 영역 -->
                 <div id="auth-section" class="flex items-center gap-2">
-                    <!-- JS에서 동적으로 채워짐 -->
+                    <button onclick="window.handleGoogleLogin()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm flex items-center gap-2">
+                        <i class="fab fa-google"></i> 구글 로그인
+                    </button>
                 </div>
                 
                 <!-- 데이터 관리 및 백업 버튼 -->
@@ -733,6 +735,59 @@
             }, 200);
         }
 
+        function openDataModal() {
+            const modal = document.getElementById('data-modal');
+            const content = document.getElementById('data-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeDataModal() {
+            const modal = document.getElementById('data-modal');
+            const content = document.getElementById('data-modal-content');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function exportDataToJson() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(categories, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `bookmarks_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('백업 파일이 다운로드되었습니다.', 'success');
+        }
+
+        function importDataFromJson(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const importedCategories = JSON.parse(e.target.result);
+                    if (Array.isArray(importedCategories)) {
+                        categories = importedCategories;
+                        saveData();
+                        showToast('데이터를 성공적으로 불러왔습니다.', 'success');
+                        closeDataModal();
+                    } else {
+                        throw new Error('Invalid format');
+                    }
+                } catch (err) {
+                    showToast('올바르지 않은 백업 파일 형식입니다.', 'error');
+                }
+            };
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
+            }
+        }
+
         function isValidUrl(string) {
             try {
                 new URL(string);
@@ -991,7 +1046,7 @@
                         container.removeChild(toast);
                     }
                 }, 300);
-            }, 3000);
+            }, 3500);
         }
 
         window.onload = init;
@@ -999,22 +1054,179 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        let db, auth, currentUser, appId;
+        let db, auth, currentUser;
         let isFirstLoad = true;
         let unsubscribeSnapshot = null;
 
-        // Firebase 설정 (발급받은 실제 설정 값 적용)
-        const defaultFirebaseConfig = {
+        // Firebase 설정 (복사해두신 본인 프로젝트 설정)
+        const firebaseConfig = {
             apiKey: "AIzaSyBFSckLj-kSpOx7ZlD9YPYLeK5y8BPHTX4",
-            projectId: "bookmark-dashboard-345cc",
             authDomain: "bookmark-dashboard-345cc.firebaseapp.com",
+            projectId: "bookmark-dashboard-345cc",
             storageBucket: "bookmark-dashboard-345cc.firebasestorage.app",
             messagingSenderId: "1064431939109",
             appId: "1:1064431939109:web:a867509734c203952719cc"
         };
 
         async function initFirebase() {
-<!-- ... existing code -->
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    updateAuthUI(user);
+
+                    if (user) {
+                        listenToCloudChanges(user.uid);
+                    } else {
+                        if (unsubscribeSnapshot) unsubscribeSnapshot();
+                        updateCloudSyncStatus('disconnected');
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase 초기화 에러:", error);
+                updateCloudSyncStatus('error', error.message);
+            }
+        }
+
+        function updateAuthUI(user) {
+            const authSection = document.getElementById('auth-section');
+            if (!authSection) return;
+
+            if (user) {
+                const displayName = user.displayName || user.email || user.uid.substring(0, 8);
+                const photoURL = user.photoURL;
+
+                authSection.innerHTML = `
+                    <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5">
+                        ${photoURL ? `<img src="${photoURL}" class="w-6 h-6 rounded-full">` : '<i class="fas fa-user-circle text-indigo-600 text-lg"></i>'}
+                        <span class="text-xs font-bold text-indigo-900 max-w-[120px] sm:max-w-[180px] truncate">${escapeHtml(displayName)}</span>
+                        <button onclick="window.handleGoogleLogout()" class="ml-1 text-xs text-red-500 hover:text-red-700 font-bold hover:underline">로그아웃</button>
+                    </div>
+                `;
+                updateCloudSyncStatus('connected', displayName);
+            } else {
+                authSection.innerHTML = `
+                    <button onclick="window.handleGoogleLogin()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fab fa-google"></i> 구글 로그인
+                    </button>
+                `;
+                updateCloudSyncStatus('disconnected');
+            }
+        }
+
+        function updateCloudSyncStatus(status, extraInfo = '') {
+            const statusEl = document.getElementById('cloud-sync-status');
+            if (!statusEl) return;
+
+            if (status === 'connected') {
+                statusEl.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span class="text-green-700 font-bold">연결됨 (${escapeHtml(extraInfo)})</span>
+                `;
+            } else if (status === 'disconnected') {
+                statusEl.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                    </span>
+                    <span class="text-yellow-700 font-bold">로그인 필요</span>
+                    <button onclick="window.handleGoogleLogin()" class="ml-2 px-2 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 transition-colors font-bold">구글 로그인하기</button>
+                `;
+            } else {
+                statusEl.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <span class="text-red-600 font-bold">연결 오류</span>
+                `;
+            }
+        }
+
+        async function handleGoogleLogin() {
+            try {
+                if (!auth) {
+                    showToast('Firebase 초기화 중입니다. 잠시 후 다시 시도해 주세요.', 'warning');
+                    return;
+                }
+                const provider = new GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                
+                showToast('구글 로그인 창을 띄웁니다...', 'info');
+                await signInWithPopup(auth, provider);
+                showToast('구글 로그인에 성공했습니다!', 'success');
+            } catch (error) {
+                console.error("로그인 에러:", error);
+                
+                if (error.code === 'auth/popup-blocked') {
+                    showToast('브라우저의 팝업 차단을 해제해 주세요!', 'error');
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    showToast('Firebase 콘솔에 syny79.github.io 도메인이 등록되지 않았습니다.', 'error');
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    showToast('Firebase 콘솔 -> Authentication에서 Google 로그인 제공업체를 [활성화]해 주세요!', 'error');
+                } else if (error.code !== 'auth/popup-closed-by-user') {
+                    showToast(`로그인 실패: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function handleGoogleLogout() {
+            try {
+                if (auth) {
+                    await signOut(auth);
+                    showToast('로그아웃되었습니다.', 'info');
+                }
+            } catch (error) {
+                console.error("로그아웃 에러:", error);
+            }
+        }
+
+        function listenToCloudChanges(userId) {
+            if (!db) return;
+            const docRef = doc(db, "users", userId);
+
+            unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const cloudData = docSnap.data().categories;
+                    if (cloudData && Array.isArray(cloudData)) {
+                        categories = cloudData;
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
+                        renderLayout();
+                    }
+                } else {
+                    saveToCloud();
+                }
+            }, (error) => {
+                console.error("실시간 동기화 오류:", error);
+            });
+        }
+
+        async function saveToCloud() {
+            if (!currentUser || !db) return;
+            try {
+                const docRef = doc(db, "users", currentUser.uid);
+                await setDoc(docRef, {
+                    categories: categories,
+                    updatedAt: Date.now()
+                }, { merge: true });
+            } catch (error) {
+                console.error("클라우드 저장 실패:", error);
+            }
+        }
+
+        // 글로벌 window에 함수 등록하여 onclick 이벤트와 연결
+        window.handleGoogleLogin = handleGoogleLogin;
+        window.handleGoogleLogout = handleGoogleLogout;
+        window.saveToCloud = saveToCloud;
+
+        initFirebase();
+    </script>
+</body>
+</html>
