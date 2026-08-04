@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 즐겨찾기 대시보드</title>
+    <!-- Tailwind CSS 및 FontAwesome 아이콘 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        .category-section {
+            transition: all 0.3s ease;
+        }
+
+        /* 썸네일 컨테이너 16:9 비율 유지 */
+        .thumbnail-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            overflow: hidden;
+            background-color: #e5e7eb;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .thumbnail-container img, .thumbnail-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: none;
+        }
+        
+        .bookmark-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-gray-50">
+
+    <header class="bg-white shadow-sm sticky top-0 z-30 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                    <i class="fas fa-bookmark text-xl"></i>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Bookmarks Dashboard</h1>
+            </div>
+            
+            <div class="flex items-center gap-2 sm:gap-4">
+                <!-- 로그인 상태 표시 영역 -->
+                <div id="auth-section" class="flex items-center gap-2">
+                    <!-- JS에서 동적으로 채워짐 -->
+                </div>
+                
+                <!-- 데이터 관리 및 백업 버튼 -->
+                <button onclick="openDataModal()" class="px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-2 border border-transparent hover:border-indigo-100 shadow-sm" title="데이터 관리 및 백업">
+                    <i class="fas fa-cloud text-lg"></i> <span class="hidden sm:inline text-sm font-bold">데이터 관리</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-grow max-w-7xl mx-auto w-full flex flex-col md:flex-row px-4 sm:px-6 lg:px-8 py-6 gap-6 h-[calc(100vh-73px)]">
+        
+        <!-- 왼쪽 사이드바 (카테고리 목록 및 정렬) -->
+        <aside class="w-full md:w-64 flex-shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-64 md:h-full overflow-hidden">
+            <div class="p-4 border-b border-gray-50">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-gray-800 text-sm">내 카테고리</h2>
+                    <select id="sort-select" onchange="changeSort(this.value)" class="text-xs border-gray-200 bg-gray-50 text-gray-600 rounded-md py-1 px-2 focus:ring-1 focus:ring-indigo-500 cursor-pointer outline-none">
+                        <option value="updatedAt_desc">최근 수정순</option>
+                        <option value="updatedAt_asc">오래된 수정순</option>
+                        <option value="createdAt_desc">최신 생성순</option>
+                        <option value="createdAt_asc">오래된 생성순</option>
+                        <option value="name_asc">이름순 (ㄱ-ㅎ)</option>
+                        <option value="name_desc">이름순 (ㅎ-ㄱ)</option>
+                    </select>
+                </div>
+                
+                <button onclick="openCategoryModal()" class="w-full py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2 border border-indigo-100">
+                    <i class="fas fa-plus"></i> 새 카테고리
+                </button>
+            </div>
+
+            <div id="sidebar-category-list" class="flex-grow overflow-y-auto p-2 space-y-1 hide-scrollbar">
+                <!-- 동적 카테고리 항목 -->
+            </div>
+        </aside>
+
+        <!-- 오른쪽 메인 컨텐츠 영역 -->
+        <main class="flex-1 min-w-0 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden relative">
+            
+            <!-- 빈 상태 화면 -->
+            <div id="empty-state" class="hidden h-full flex-col items-center justify-center p-8 text-center bg-gray-50">
+                <div class="w-20 h-20 bg-white shadow-sm rounded-full flex items-center justify-center mb-4 border border-gray-100">
+                    <i class="fas fa-folder-open text-3xl text-gray-400"></i>
+                </div>
+                <h2 class="text-lg font-bold text-gray-700 mb-2">선택된 카테고리가 없습니다</h2>
+                <p class="text-gray-500 text-sm mb-6 max-w-sm">왼쪽 목록에서 카테고리를 선택하거나,<br>새로운 카테고리를 만들어주세요.</p>
+            </div>
+
+            <!-- 선택된 카테고리의 북마크 렌더링 영역 -->
+            <div id="dashboard-content" class="flex-1 overflow-y-auto p-4 sm:p-6 hide-scrollbar relative">
+                <!-- 북마크 컨텐츠 추가 위치 -->
+            </div>
+
+        </main>
+    </div>
+
+    <!-- 모달: 새 카테고리 추가/수정 -->
+    <div id="category-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-200" id="category-modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-900" id="category-modal-title">새 카테고리 만들기</h3>
+                <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <input type="hidden" id="edit-category-id">
+                <div class="mb-5">
+                    <label for="category-name" class="block text-sm font-medium text-gray-700 mb-2">카테고리 이름</label>
+                    <input type="text" id="category-name" placeholder="예: 업무용, 디자인 레퍼런스, 뉴스" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+                           onkeypress="if(event.key === 'Enter') saveCategory()">
+                    <p id="category-error" class="text-red-500 text-xs mt-2 hidden">카테고리 이름을 입력해주세요.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="icon-btn w-10 h-10 rounded bg-indigo-100 text-indigo-600 border-2 border-indigo-500 flex items-center justify-center" data-icon="fa-folder"><i class="fas fa-folder"></i></button>
+                    <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-briefcase"><i class="fas fa-briefcase"></i></button>
+                    <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-laptop-code"><i class="fas fa-laptop-code"></i></button>
+                    <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-palette"><i class="fas fa-palette"></i></button>
+                    <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-star"><i class="fas fa-star"></i></button>
+                    <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-heart"><i class="fas fa-heart"></i></button>
+                    <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-gamepad"><i class="fas fa-gamepad"></i></button>
+                </div>
+                <input type="hidden" id="selected-icon" value="fa-folder">
+            </div>
+            <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-end gap-3">
+                <button onclick="closeCategoryModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none">취소</button>
+                <button onclick="saveCategory()" id="btn-save-category" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none shadow-sm">추가하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모달: 새 북마크(링크) 추가/수정 -->
+    <div id="bookmark-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-200" id="bookmark-modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-900" id="bookmark-modal-title">새 북마크 추가</h3>
+                <button onclick="closeBookmarkModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="target-category-id">
+                <input type="hidden" id="edit-bookmark-id">
+                
+                <div>
+                    <label for="bookmark-url" class="block text-sm font-medium text-gray-700 mb-1">URL 주소 <span class="text-red-500">*</span></label>
+                    <input type="url" id="bookmark-url" placeholder="https://example.com" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+                           onblur="fetchMetadata(this.value)">
+                    <p id="url-error" class="text-red-500 text-xs mt-1 hidden">유효한 URL을 입력해주세요 (http:// 또는 https:// 포함).</p>
+                </div>
+
+                <div>
+                    <label for="bookmark-title" class="block text-sm font-medium text-gray-700 mb-1">제목 (선택사항)</label>
+                    <input type="text" id="bookmark-title" placeholder="자동으로 가져옵니다" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow">
+                </div>
+
+                <div>
+                    <label for="bookmark-desc" class="block text-sm font-medium text-gray-700 mb-1">설명 (선택사항)</label>
+                    <textarea id="bookmark-desc" rows="2" placeholder="자동으로 가져옵니다" 
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-none"></textarea>
+                </div>
+                
+                <!-- 미리보기 영역 -->
+                <div id="preview-area" class="hidden mt-4 border border-gray-200 rounded-lg p-2 bg-gray-50">
+                    <p class="text-xs text-gray-500 mb-2 font-semibold">미리보기</p>
+                    <div class="flex gap-3">
+                        <div class="w-20 h-20 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                            <img id="preview-img" src="" alt="preview" class="w-full h-full object-cover">
+                        </div>
+                        <div class="overflow-hidden flex flex-col justify-center">
+                            <p id="preview-title" class="text-sm font-bold text-gray-800 truncate"></p>
+                            <p id="preview-domain" class="text-xs text-gray-500 truncate mt-1"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 로딩 인디케이터 -->
+                <div id="loading-indicator" class="hidden flex items-center justify-center py-4">
+                    <i class="fas fa-spinner fa-spin text-indigo-500 text-2xl"></i>
+                    <span class="ml-2 text-sm text-gray-600">페이지 정보 가져오는 중...</span>
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-end gap-3">
+                <button onclick="closeBookmarkModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none">취소</button>
+                <button id="btn-save-bookmark" onclick="saveBookmark()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none shadow-sm flex items-center gap-2">
+                    <span id="btn-save-text"><i class="fas fa-save"></i> 저장하기</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 모달: 데이터 관리(백업/복구 및 동기화) -->
+    <div id="data-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-200" id="data-modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-900">데이터 관리 및 백업</h3>
+                <button onclick="closeDataModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- 클라우드 동기화 상태 -->
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 class="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                        <i class="fas fa-cloud"></i> 클라우드 동기화 상태
+                    </h4>
+                    <div id="cloud-sync-status" class="flex items-center gap-2 text-sm text-gray-600">
+                        <span class="relative flex h-3 w-3">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
+                        </span>
+                        연결 확인 중...
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">클라우드 동기화가 활성화되면 구글 계정으로 연결된 모든 기기에서 동일한 데이터를 확인할 수 있습니다.</p>
+                </div>
+
+                <!-- 수동 백업 및 복구 -->
+                <div>
+                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <i class="fas fa-save"></i> 수동 백업 및 복구
+                    </h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="exportDataToJson()" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-colors text-indigo-700">
+                            <i class="fas fa-file-download text-2xl mb-2"></i>
+                            <span class="text-sm font-bold">데이터 내보내기</span>
+                            <span class="text-xs opacity-70 mt-1">.json 백업 파일</span>
+                        </button>
+                        
+                        <label for="import-file" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-gray-200 bg-white hover:bg-gray-50 transition-colors text-gray-700 cursor-pointer">
+                            <i class="fas fa-file-upload text-2xl mb-2"></i>
+                            <span class="text-sm font-bold">데이터 불러오기</span>
+                            <span class="text-xs opacity-70 mt-1">기존 백업 파일</span>
+                            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importDataFromJson(event)">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토스트 알림 컨테이너 -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        let categories = [];
+        let selectedCategoryId = null;
+        let currentSortMode = 'updatedAt_desc';
+        const STORAGE_KEY = 'bookmark_dashboard_data';
+
+        function init() {
+            loadData();
+            setupIconSelector();
+            renderLayout();
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                try {
+                    categories = JSON.parse(savedData);
+                    categories.forEach(cat => {
+                        if (!cat.createdAt) cat.createdAt = Date.now();
+                        if (!cat.updatedAt) cat.updatedAt = cat.createdAt;
+                    });
+                } catch (e) {
+                    console.error("데이터 로드 실패", e);
+                    categories = [];
+                }
+            } else {
+                categories = [];
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
+            if (window.saveToCloud) {
+                window.saveToCloud();
+            }
+            renderLayout();
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        }
+
+        function changeSort(sortMode) {
+            currentSortMode = sortMode;
+            renderLayout();
+        }
+
+        function sortCategories() {
+            return [...categories].sort((a, b) => {
+                if (currentSortMode === 'updatedAt_desc') return (b.updatedAt || 0) - (a.updatedAt || 0);
+                if (currentSortMode === 'updatedAt_asc') return (a.updatedAt || 0) - (b.updatedAt || 0);
+                if (currentSortMode === 'createdAt_desc') return (b.createdAt || 0) - (a.createdAt || 0);
+                if (currentSortMode === 'createdAt_asc') return (a.createdAt || 0) - (b.createdAt || 0);
+                if (currentSortMode === 'name_asc') return a.name.localeCompare(b.name, 'ko-KR');
+                if (currentSortMode === 'name_desc') return b.name.localeCompare(a.name, 'ko-KR');
+                return 0;
+            });
+        }
+
+        function selectCategory(id) {
+            selectedCategoryId = id;
+            renderMainContent();
+            renderSidebar();
+        }
+
+        function renderLayout() {
+            renderSidebar();
+            if (!selectedCategoryId || !categories.find(c => c.id === selectedCategoryId)) {
+                const sorted = sortCategories();
+                selectedCategoryId = sorted.length > 0 ? sorted[0].id : null;
+            }
+            renderMainContent();
+        }
+
+        function renderSidebar() {
+            const listContainer = document.getElementById('sidebar-category-list');
+            listContainer.innerHTML = '';
+
+            const sortedCategories = sortCategories();
+
+            sortedCategories.forEach(cat => {
+                const isSelected = cat.id === selectedCategoryId;
+                const bookmarkCount = cat.bookmarks ? cat.bookmarks.length : 0;
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between gap-2 transition-all duration-200 group cursor-pointer ${
+                    isSelected 
+                        ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 shadow-sm' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
+                }`;
+                
+                itemDiv.onclick = (e) => {
+                    if(!e.target.closest('button')) {
+                        selectCategory(cat.id);
+                    }
+                };
+                
+                itemDiv.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden flex-grow">
+                        <div class="${isSelected ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'} transition-colors w-5 text-center flex-shrink-0">
+                            <i class="fas ${cat.icon}"></i>
+                        </div>
+                        <div class="truncate text-[13px] flex-grow">${escapeHtml(cat.name)}</div>
+                    </div>
+                    
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <div class="text-[10px] ${isSelected ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'} px-2 py-0.5 rounded-full font-medium transition-colors group-hover:hidden">
+                            ${bookmarkCount}
+                        </div>
+                        <div class="hidden group-hover:flex items-center gap-1">
+                            <button onclick="openCategoryModal('${cat.id}')" class="text-gray-400 hover:text-indigo-600 w-6 h-6 rounded flex items-center justify-center bg-white border border-gray-200 shadow-sm transition-colors" title="카테고리 수정">
+                                <i class="fas fa-edit text-[10px]"></i>
+                            </button>
+                            <button onclick="deleteCategory('${cat.id}')" class="text-gray-400 hover:text-red-600 w-6 h-6 rounded flex items-center justify-center bg-white border border-gray-200 shadow-sm transition-colors" title="카테고리 삭제">
+                                <i class="fas fa-trash-alt text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                listContainer.appendChild(itemDiv);
+            });
+        }
+
+        function renderMainContent() {
+            const container = document.getElementById('dashboard-content');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (!selectedCategoryId || categories.length === 0) {
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            }
+            
+            container.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+            
+            const category = categories.find(c => c.id === selectedCategoryId);
+            if (!category) return;
+
+            const bookmarkCount = category.bookmarks ? category.bookmarks.length : 0;
+            
+            const headerHtml = `
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b border-gray-100 gap-4 sticky top-0 bg-white z-10 pt-1">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
+                            <i class="fas ${category.icon} text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900">${escapeHtml(category.name)}</h2>
+                            <div class="flex items-center mt-1">
+                                <span class="text-xs text-gray-500">
+                                    총 링크 수: <span class="font-bold text-indigo-600 ml-0.5">${bookmarkCount}</span>개
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openBookmarkModal('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm flex items-center gap-1.5">
+                            <i class="fas fa-plus"></i> 링크 추가
+                        </button>
+                        <button onclick="openCategoryModal('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors flex items-center gap-1" title="카테고리 수정">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteCategory('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg transition-colors flex items-center gap-1" title="카테고리 삭제">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            let gridHtml = '';
+            if (bookmarkCount === 0) {
+                gridHtml = `
+                    <div class="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300 flex flex-col items-center justify-center">
+                        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                            <i class="fas fa-link text-2xl text-gray-300"></i>
+                        </div>
+                        <p class="text-gray-500 text-sm mb-4 font-medium">저장된 링크가 없습니다.</p>
+                        <button onclick="openBookmarkModal('${category.id}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-5 py-2.5 rounded-lg transition-colors border border-indigo-100 shadow-sm">첫 번째 링크 추가하기</button>
+                    </div>
+                `;
+            } else {
+                gridHtml = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-10">`;
+                
+                category.bookmarks.forEach(bm => {
+                    const fallbackColor = stringToColor(bm.domain || bm.url);
+                    const fallbackInitial = (bm.domain || bm.title || "?").charAt(0).toUpperCase();
+                    
+                    let imageHtml = '';
+                    if (bm.image && bm.image !== 'null' && bm.image !== '') {
+                        imageHtml = `<img src="${bm.image}" alt="${escapeHtml(bm.title)}" class="transition-transform duration-500 hover:scale-105" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'absolute inset-0 flex flex-col items-center justify-center text-white\\' style=\\'background-color:${fallbackColor}\\'><i class=\\'fas fa-globe mb-1 opacity-50\\'></i><span class=\\'text-2xl font-bold\\'>${fallbackInitial}</span></div>';">`;
+                    } else {
+                        imageHtml = `<div class="absolute inset-0 flex flex-col items-center justify-center text-white" style="background-color:${fallbackColor}">
+                                        <i class="fas fa-globe mb-1 opacity-50"></i>
+                                        <span class="text-2xl font-bold">${fallbackInitial}</span>
+                                     </div>`;
+                    }
+
+                    const dateStr = new Date(bm.addedAt).toLocaleDateString('ko-KR', { year: '2-digit', month: 'short', day: 'numeric' });
+
+                    gridHtml += `
+                        <div class="bookmark-card bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-full relative group shadow-sm">
+                            <a href="${escapeHtml(bm.url)}" target="_blank" rel="noopener noreferrer" class="block flex-grow focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <div class="thumbnail-container border-b border-gray-100 bg-gray-50">
+                                    ${imageHtml}
+                                </div>
+                                <div class="p-3 flex flex-col h-[90px]">
+                                    <div class="flex items-center gap-1.5 mb-1.5">
+                                        <img src="https://www.google.com/s2/favicons?domain=${bm.domain || new URL(bm.url).hostname}&sz=32" class="w-3.5 h-3.5 rounded-sm opacity-80" onerror="this.style.display='none'">
+                                        <span class="text-[10px] text-gray-500 font-medium truncate">${escapeHtml(bm.domain || new URL(bm.url).hostname)}</span>
+                                    </div>
+                                    <h3 class="font-bold text-gray-800 text-[12px] leading-snug line-clamp-2 mb-1 group-hover:text-indigo-600 transition-colors" title="${escapeHtml(bm.title)}">${escapeHtml(bm.title || bm.url)}</h3>
+                                    <p class="text-[10px] text-gray-400 line-clamp-2 flex-grow leading-tight">${escapeHtml(bm.desc || '설명 없음')}</p>
+                                </div>
+                            </a>
+                            <div class="px-3 py-2 bg-gray-50 border-t border-gray-100 flex justify-between items-center mt-auto">
+                                <span class="text-[9px] text-gray-400 font-medium flex items-center gap-1"><i class="far fa-clock"></i>${dateStr}</span>
+                                <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-gray-50 rounded-md">
+                                    <button onclick="copyToClipboard('${escapeHtml(bm.url)}'); event.stopPropagation();" class="text-gray-500 hover:text-indigo-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors" title="링크 복사">
+                                        <i class="far fa-copy text-[10px]"></i>
+                                    </button>
+                                    <button onclick="openBookmarkModal('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-blue-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors" title="수정">
+                                        <i class="far fa-edit text-[10px]"></i>
+                                    </button>
+                                    <button onclick="deleteBookmark('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-red-600 hover:bg-red-100 w-6 h-6 rounded flex items-center justify-center transition-colors" title="삭제">
+                                        <i class="far fa-trash-alt text-[10px]"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                gridHtml += `</div>`;
+            }
+
+            container.innerHTML = headerHtml + gridHtml;
+        }
+
+        function openCategoryModal(categoryId = null) {
+            const nameInput = document.getElementById('category-name');
+            const errorMsg = document.getElementById('category-error');
+            const modalTitle = document.getElementById('category-modal-title');
+            const saveBtnText = document.getElementById('btn-save-category');
+            const editIdInput = document.getElementById('edit-category-id');
+            
+            errorMsg.classList.add('hidden');
+            
+            if (categoryId) {
+                const category = categories.find(c => c.id === categoryId);
+                if (!category) return;
+                
+                modalTitle.textContent = '카테고리 수정';
+                saveBtnText.innerHTML = '<i class="fas fa-save"></i> 수정하기';
+                editIdInput.value = categoryId;
+                nameInput.value = category.name;
+                
+                document.getElementById('selected-icon').value = category.icon;
+                const btns = document.querySelectorAll('.icon-btn');
+                btns.forEach(b => {
+                    if (b.dataset.icon === category.icon) {
+                        b.classList.remove('bg-gray-100', 'text-gray-600', 'border-transparent');
+                        b.classList.add('bg-indigo-100', 'text-indigo-600', 'border-indigo-500');
+                    } else {
+                        b.classList.remove('bg-indigo-100', 'text-indigo-600', 'border-indigo-500');
+                        b.classList.add('bg-gray-100', 'text-gray-600', 'border-transparent');
+                    }
+                });
+                
+            } else {
+                modalTitle.textContent = '새 카테고리 만들기';
+                saveBtnText.innerHTML = '추가하기';
+                editIdInput.value = '';
+                nameInput.value = '';
+                
+                const firstIconBtn = document.querySelector('.icon-btn');
+                if (firstIconBtn) firstIconBtn.click();
+            }
+            
+            const modal = document.getElementById('category-modal');
+            const content = document.getElementById('category-modal-content');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+                nameInput.focus();
+            }, 10);
+        }
+
+        function closeCategoryModal() {
+            const modal = document.getElementById('category-modal');
+            const content = document.getElementById('category-modal-content');
+            
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function setupIconSelector() {
+            const btns = document.querySelectorAll('.icon-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    btns.forEach(b => {
+                        b.classList.remove('bg-indigo-100', 'text-indigo-600', 'border-indigo-500');
+                        b.classList.add('bg-gray-100', 'text-gray-600', 'border-transparent');
+                    });
+                    
+                    this.classList.remove('bg-gray-100', 'text-gray-600', 'border-transparent');
+                    this.classList.add('bg-indigo-100', 'text-indigo-600', 'border-indigo-500');
+                    
+                    document.getElementById('selected-icon').value = this.dataset.icon;
+                });
+            });
+        }
+
+        function saveCategory() {
+            const nameInput = document.getElementById('category-name');
+            const name = nameInput.value.trim();
+            const icon = document.getElementById('selected-icon').value;
+            const editId = document.getElementById('edit-category-id').value;
+            const errorMsg = document.getElementById('category-error');
+
+            if (!name) {
+                errorMsg.classList.remove('hidden');
+                nameInput.focus();
+                return;
+            }
+
+            if (editId) {
+                const categoryIndex = categories.findIndex(c => c.id === editId);
+                if (categoryIndex > -1) {
+                    categories[categoryIndex].name = name;
+                    categories[categoryIndex].icon = icon;
+                    categories[categoryIndex].updatedAt = Date.now();
+                    showToast('카테고리가 수정되었습니다.', 'success');
+                }
+            } else {
+                const newCategory = {
+                    id: generateId(),
+                    name: name,
+                    icon: icon,
+                    bookmarks: [],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+                categories.push(newCategory);
+                selectedCategoryId = newCategory.id;
+                
+                if(currentSortMode.includes('createdAt') || currentSortMode.includes('updatedAt')) {
+                    currentSortMode = 'updatedAt_desc';
+                    document.getElementById('sort-select').value = 'updatedAt_desc';
+                }
+
+                showToast('새 카테고리가 추가되었습니다.', 'success');
+            }
+
+            saveData();
+            closeCategoryModal();
+        }
+
+        function deleteCategory(id) {
+            if (confirm("정말 이 카테고리를 삭제하시겠습니까?\n저장된 모든 링크가 함께 삭제됩니다.")) {
+                categories = categories.filter(cat => cat.id !== id);
+                if (selectedCategoryId === id) {
+                    selectedCategoryId = null;
+                }
+                saveData();
+                showToast('카테고리가 삭제되었습니다.', 'info');
+            }
+        }
+
+        let currentMetadata = null;
+
+        function openBookmarkModal(categoryId, bookmarkId = null) {
+            document.getElementById('target-category-id').value = categoryId;
+            document.getElementById('edit-bookmark-id').value = bookmarkId || '';
+            
+            const modalTitle = document.getElementById('bookmark-modal-title');
+            const saveBtnText = document.getElementById('btn-save-text');
+            
+            document.getElementById('url-error').classList.add('hidden');
+            
+            if (bookmarkId) {
+                modalTitle.textContent = '북마크 수정';
+                saveBtnText.innerHTML = '<i class="fas fa-save"></i> 수정하기';
+                
+                const category = categories.find(c => c.id === categoryId);
+                const bookmark = category.bookmarks.find(b => b.id === bookmarkId);
+                
+                document.getElementById('bookmark-url').value = bookmark.url;
+                document.getElementById('bookmark-title').value = bookmark.title;
+                document.getElementById('bookmark-desc').value = bookmark.desc;
+                
+                currentMetadata = {
+                    title: bookmark.title,
+                    description: bookmark.desc,
+                    image: bookmark.image,
+                    domain: bookmark.domain
+                };
+                
+                if (bookmark.image && bookmark.image !== 'null') {
+                    document.getElementById('preview-img').src = bookmark.image;
+                } else {
+                    const domainInitials = bookmark.domain.charAt(0).toUpperCase();
+                    const color = stringToColor(bookmark.domain);
+                    document.getElementById('preview-img').src = `https://placehold.co/400x300/${color.replace('#','')}/FFFFFF?text=${domainInitials}`;
+                }
+                
+                document.getElementById('preview-title').textContent = bookmark.title || bookmark.url;
+                document.getElementById('preview-domain').textContent = bookmark.domain;
+                document.getElementById('preview-area').classList.remove('hidden');
+                
+            } else {
+                modalTitle.textContent = '새 북마크 추가';
+                saveBtnText.innerHTML = '<i class="fas fa-save"></i> 저장하기';
+                
+                document.getElementById('bookmark-url').value = '';
+                document.getElementById('bookmark-title').value = '';
+                document.getElementById('bookmark-desc').value = '';
+                document.getElementById('preview-area').classList.add('hidden');
+                currentMetadata = null;
+            }
+            
+            const modal = document.getElementById('bookmark-modal');
+            const content = document.getElementById('bookmark-modal-content');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+                document.getElementById('bookmark-url').focus();
+            }, 10);
+        }
+
+        function closeBookmarkModal() {
+            const modal = document.getElementById('bookmark-modal');
+            const content = document.getElementById('bookmark-modal-content');
+            
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;  
+            }
+        }
+
+        async function fetchMetadata(url) {
+            if (!url) return;
+            
+            if (!/^https?:\/\//i.test(url)) {
+                url = 'http://' + url;
+                document.getElementById('bookmark-url').value = url;
+            }
+
+            if (!isValidUrl(url)) {
+                document.getElementById('url-error').classList.remove('hidden');
+                return;
+            }
+            
+            document.getElementById('url-error').classList.add('hidden');
+            
+            const loading = document.getElementById('loading-indicator');
+            const previewArea = document.getElementById('preview-area');
+            const btnSave = document.getElementById('btn-save-bookmark');
+            
+            loading.classList.remove('hidden');
+            previewArea.classList.add('hidden');
+            btnSave.disabled = true;
+            btnSave.classList.add('opacity-70', 'cursor-not-allowed');
+            
+            try {
+                const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(url)}`;
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) throw new Error('API Request Failed');
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const result = data.data;
+                    currentMetadata = {
+                        title: result.title || '',
+                        description: result.description || '',
+                        image: result.image?.url || '',
+                        domain: new URL(url).hostname.replace('www.', '')
+                    };
+                    
+                    const titleInput = document.getElementById('bookmark-title');
+                    const descInput = document.getElementById('bookmark-desc');
+                    
+                    if (!titleInput.value) titleInput.value = currentMetadata.title;
+                    if (!descInput.value) descInput.value = currentMetadata.description;
+                    
+                    if (currentMetadata.image) {
+                        document.getElementById('preview-img').src = currentMetadata.image;
+                    } else {
+                        const domainInitials = currentMetadata.domain.charAt(0).toUpperCase();
+                        const color = stringToColor(currentMetadata.domain);
+                        document.getElementById('preview-img').src = `https://placehold.co/400x300/${color.replace('#','')}/FFFFFF?text=${domainInitials}`;
+                    }
+                    
+                    document.getElementById('preview-title').textContent = currentMetadata.title || url;
+                    document.getElementById('preview-domain').textContent = currentMetadata.domain;
+                    
+                    previewArea.classList.remove('hidden');
+                } else {
+                    throw new Error('No metadata found');
+                }
+            } catch (error) {
+                console.warn("메타데이터를 가져오는데 실패했습니다.", error);
+                currentMetadata = {
+                    title: '',
+                    description: '',
+                    image: '',
+                    domain: new URL(url).hostname.replace('www.', '')
+                };
+                showToast('미리보기를 가져올 수 없습니다. 수동으로 입력해주세요.', 'warning');
+            } finally {
+                loading.classList.add('hidden');
+                btnSave.disabled = false;
+                btnSave.classList.remove('opacity-70', 'cursor-not-allowed');
+            }
+        }
+
+        function saveBookmark() {
+            const categoryId = document.getElementById('target-category-id').value;
+            const editBookmarkId = document.getElementById('edit-bookmark-id').value;
+            let url = document.getElementById('bookmark-url').value.trim();
+            const title = document.getElementById('bookmark-title').value.trim();
+            const desc = document.getElementById('bookmark-desc').value.trim();
+            
+            if (!url) {
+                document.getElementById('url-error').classList.remove('hidden');
+                document.getElementById('bookmark-url').focus();
+                return;
+            }
+
+            if (!/^https?:\/\//i.test(url)) {
+                url = 'http://' + url;
+            }
+
+            if (!isValidUrl(url)) {
+                document.getElementById('url-error').classList.remove('hidden');
+                return;
+            }
+
+            const categoryIndex = categories.findIndex(c => c.id === categoryId);
+            if (categoryIndex === -1) return;
+
+            let domain = "";
+            try { domain = new URL(url).hostname.replace('www.', ''); } catch(e) {}
+
+            if (editBookmarkId) {
+                const bookmarkIndex = categories[categoryIndex].bookmarks.findIndex(b => b.id === editBookmarkId);
+                if (bookmarkIndex > -1) {
+                    const existingBookmark = categories[categoryIndex].bookmarks[bookmarkIndex];
+                    categories[categoryIndex].bookmarks[bookmarkIndex] = {
+                        ...existingBookmark,
+                        url: url,
+                        title: title || (currentMetadata && currentMetadata.title) || domain,
+                        desc: desc || (currentMetadata && currentMetadata.description) || '',
+                        image: (currentMetadata && currentMetadata.image !== undefined) ? currentMetadata.image : existingBookmark.image,
+                        domain: domain
+                    };
+                    categories[categoryIndex].updatedAt = Date.now();
+                    showToast('링크가 수정되었습니다.', 'success');
+                }
+            } else {
+                const newBookmark = {
+                    id: generateId(),
+                    url: url,
+                    title: title || (currentMetadata && currentMetadata.title) || domain,
+                    desc: desc || (currentMetadata && currentMetadata.description) || '',
+                    image: (currentMetadata && currentMetadata.image) || '',
+                    domain: domain,
+                    addedAt: Date.now()
+                };
+
+                categories[categoryIndex].bookmarks.unshift(newBookmark);
+                categories[categoryIndex].updatedAt = Date.now();
+                showToast('링크가 저장되었습니다.', 'success');
+            }
+            
+            saveData();
+            closeBookmarkModal();
+        }
+
+        function deleteBookmark(categoryId, bookmarkId) {
+            const categoryIndex = categories.findIndex(c => c.id === categoryId);
+            if (categoryIndex === -1) return;
+
+            if (confirm("이 링크를 삭제하시겠습니까?")) {
+                categories[categoryIndex].bookmarks = categories[categoryIndex].bookmarks.filter(b => b.id !== bookmarkId);
+                categories[categoryIndex].updatedAt = Date.now();
+                saveData();
+                showToast('링크가 삭제되었습니다.', 'info');
+            }
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                 .toString()
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            let color = '#';
+            for (let i = 0; i < 3; i++) {
+                const value = (hash >> (i * 8)) & 0xFF;
+                const adjustedValue = Math.max(50, Math.min(200, value));
+                color += ('00' + adjustedValue.toString(16)).substr(-2);
+            }
+            return color;
+        }
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('링크가 클립보드에 복사되었습니다.', 'success');
+                }).catch(err => {
+                    fallbackCopyTextToClipboard(text);
+                });
+            } else {
+                fallbackCopyTextToClipboard(text);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text) {
+            var textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                var successful = document.execCommand('copy');
+                if (successful) {
+                    showToast('링크가 클립보드에 복사되었습니다.', 'success');
+                }
+            } catch (err) {
+                console.error('Copy failed', err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-gray-800';
+            let icon = 'fa-info-circle';
+            let iconColor = 'text-blue-400';
+            
+            if (type === 'success') {
+                icon = 'fa-check-circle';
+                iconColor = 'text-green-400';
+            } else if (type === 'warning') {
+                icon = 'fa-exclamation-triangle';
+                iconColor = 'text-yellow-400';
+            } else if (type === 'error') {
+                icon = 'fa-times-circle';
+                iconColor = 'text-red-400';
+            }
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-white text-sm transform transition-all duration-300 translate-y-10 opacity-0 ${bgClass}`;
+            toast.innerHTML = `
+                <i class="fas ${icon} ${iconColor} text-lg"></i>
+                <span class="font-medium">${escapeHtml(message)}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            });
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    if (container.contains(toast)) {
+                        container.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        window.onload = init;
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let db, auth, currentUser, appId;
+        let isFirstLoad = true;
+        let unsubscribeSnapshot = null;
+
+        async function initFirebase() {
+            if (typeof __firebase_config === 'undefined') {
+                updateSyncUI(false, "지원하지 않는 환경");
+                return;
+            }
+
+            try {
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'bookmark-dashboard';
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    updateAuthUI(user);
+                    
+                    if (user) {
+                        setupFirestoreSync();
+                    } else {
+                        if (unsubscribeSnapshot) {
+                            unsubscribeSnapshot();
+                            unsubscribeSnapshot = null;
+                        }
+                        updateSyncUI(false, "로그인이 필요합니다");
+                    }
+                });
+
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } 
+            } catch (e) {
+                console.error("Firebase 초기화 실패:", e);
+                updateSyncUI(false, "연결 실패");
+            }
+        }
+
+        window.loginWithGoogle = async function() {
+            if (!auth) return;
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                showToast('구글 계정으로 로그인되었습니다.', 'success');
+                if (categories.length > 0) {
+                    window.saveToCloud();
+                }
+            } catch (error) {
+                console.error("구글 로그인 실패:", error);
+                if (error.code === 'auth/unauthorized-domain') {
+                    showToast('현재 환경에서는 승인되지 않은 도메인입니다. Firebase 콘솔의 Authorized Domains에 도메인을 추가해주세요.', 'warning');
+                } else {
+                    showToast('로그인 중 오류가 발생했습니다.', 'error');
+                }
+            }
+        };
+
+        window.logoutGoogle = async function() {
+            if (!auth) return;
+            try {
+                await signOut(auth);
+                showToast('로그아웃 되었습니다.', 'info');
+            } catch (error) {
+                console.error("로그아웃 실패:", error);
+            }
+        };
+
+        function updateAuthUI(user) {
+            const authSection = document.getElementById('auth-section');
+            if (!authSection) return;
+
+            if (user) {
+                let displayName = "사용자";
+                if (user.displayName) {
+                    displayName = user.displayName;
+                } else if (user.email) {
+                    displayName = user.email;
+                } else {
+                    displayName = `ID: ${user.uid}`;
+                }
+                
+                let html = `<div class="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-lg border border-green-100" title="고유 ID: ${user.uid}">`;
+                
+                if (user.photoURL) {
+                    html += `<img src="${user.photoURL}" alt="profile" class="w-6 h-6 rounded-full border border-green-200">`;
+                } else {
+                    html += `<div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs"><i class="fas fa-user"></i></div>`;
+                }
+                
+                html += `<span class="text-[11px] font-bold text-green-700 hidden sm:inline max-w-[200px] overflow-hidden whitespace-nowrap text-ellipsis">${escapeHtml(displayName)}</span>`;
+                
+                html += `<button onclick="logoutGoogle()" class="ml-2 px-2 py-1 bg-white border border-green-200 text-green-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600 rounded-md text-[10px] font-bold shadow-sm transition-colors flex items-center gap-1" title="로그아웃">
+                    <i class="fas fa-sign-out-alt"></i> 로그아웃
+                </button>`;
+                
+                html += `</div>`;
+            } else {
+                authSection.innerHTML = `
+                    <button onclick="loginWithGoogle()" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center gap-2">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-4 h-4" alt="Google">
+                        <span class="hidden sm:inline">구글 로그인</span>
+                    </button>
+                `;
+            }
+        }
+
+        function setupFirestoreSync() {
+            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'dashboard_data', 'main_state');
+            
+            updateSyncUI(true, "동기화 준비 완료");
+
+            if (unsubscribeSnapshot) {
+                unsubscribeSnapshot();
+            }
+
+            unsubscribeSnapshot = onSnapshot(docRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && data.categoriesJson) {
+                        try {
+                            const cloudCategories = JSON.parse(data.categoriesJson);
+                            if (JSON.stringify(categories) !== JSON.stringify(cloudCategories)) {
+                                categories = cloudCategories;
+                                localStorage.setItem('bookmark_dashboard_data', JSON.stringify(categories));
+                                renderLayout();
+                                
+                                if (!isFirstLoad) {
+                                    showToast('다른 기기의 변경사항이 동기화되었습니다.', 'info');
+                                }
+                            }
+                            updateSyncUI(true, "클라우드와 최신 상태 유지 중");
+                        } catch(e) {
+                            console.error("클라우드 데이터 파싱 에러", e);
+                        }
+                    }
+                }
+                isFirstLoad = false;
+            }, (error) => {
+                console.error("Firestore 동기화 에러:", error);
+                updateSyncUI(false, "동기화 오류");
+            });
+        }
+
+        window.saveToCloud = async function() {
+            if (!currentUser || !db) return;
+            
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'dashboard_data', 'main_state');
+                await setDoc(docRef, {
+                    categoriesJson: JSON.stringify(categories),
+                    updatedAt: Date.now()
+                });
+                updateSyncUI(true, "클라우드에 안전하게 저장됨");
+            } catch (e) {
+                console.error("클라우드 저장 실패:", e);
+                updateSyncUI(false, "저장 실패");
+            }
+        };
+
+        function updateSyncUI(isSynced, message) {
+            const statusDiv = document.getElementById('cloud-sync-status');
+            if (!statusDiv) return;
+
+            if (isSynced) {
+                statusDiv.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-sm"></span>
+                    </span>
+                    <span class="text-green-700 font-medium">${message}</span>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-sm"></span>
+                    </span>
+                    <span class="text-red-700 font-medium">${message}</span>
+                    ${!currentUser ? `<button onclick="loginWithGoogle()" class="ml-2 text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-100">구글 로그인하기</button>` : ''}
+                `;
+            }
+        }
+
+        initFirebase();
+    </script>
+
+    <script>
+        function openDataModal() {
+            const modal = document.getElementById('data-modal');
+            const content = document.getElementById('data-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeDataModal() {
+            const modal = document.getElementById('data-modal');
+            const content = document.getElementById('data-modal-content');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function exportDataToJson() {
+            if (categories.length === 0) {
+                showToast('백업할 데이터가 없습니다.', 'warning');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(categories, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.download = `bookmark_backup_${dateStr}.json`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('데이터가 백업 파일로 저장되었습니다.', 'success');
+            closeDataModal();
+        }
+
+        function importDataFromJson(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (Array.isArray(importedData)) {
+                        if (confirm('기존 데이터를 모두 덮어쓰고 복구하시겠습니까?')) {
+                            categories = importedData;
+                            saveData();
+                            renderLayout();
+                            showToast('데이터가 성공적으로 복구되었습니다.', 'success');
+                            closeDataModal();
+                        }
+                    } else {
+                        throw new Error('Invalid Format');
+                    }
+                } catch (error) {
+                    console.error("데이터 복구 실패:", error);
+                    showToast('잘못된 백업 파일 형식입니다.', 'error');
+                }
+                
+                event.target.value = ''; 
+            };
+            
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
