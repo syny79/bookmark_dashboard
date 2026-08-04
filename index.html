@@ -118,8 +118,11 @@
                 <div class="w-20 h-20 bg-white shadow-sm rounded-full flex items-center justify-center mb-4 border border-gray-100">
                     <i class="fas fa-folder-open text-3xl text-gray-400"></i>
                 </div>
-                <h2 class="text-lg font-bold text-gray-700 mb-2">선택된 카테고리가 없습니다</h2>
-                <p class="text-gray-500 text-sm mb-6 max-w-sm">왼쪽 목록에서 카테고리를 선택하거나,<br>새로운 카테고리를 만들어주세요.</p>
+                <h2 id="empty-state-title" class="text-lg font-bold text-gray-700 mb-2">구글 로그인이 필요합니다</h2>
+                <p id="empty-state-desc" class="text-gray-500 text-sm mb-6 max-w-sm">상단의 [구글 로그인] 버튼을 눌러 로그인하시면<br>저장된 즐겨찾기를 불러올 수 있습니다.</p>
+                <button onclick="window.handleGoogleLogin()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer">
+                    <i class="fab fa-google"></i> 구글 로그인하기
+                </button>
             </div>
 
             <!-- 선택된 카테고리의 북마크 렌더링 영역 -->
@@ -251,7 +254,7 @@
                         </span>
                         연결 확인 중...
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">클라우드 동기화가 활성화되면 구글 계정으로 연결된 모든 기기에서 동일한 데이터를 확인할 수 있습니다.</p>
+                    <p class="text-xs text-gray-500 mt-2">구글 계정으로 로그인하시면 기기 간 실시간 동기화가 활성화됩니다.</p>
                 </div>
 
                 <!-- 수동 백업 및 복구 -->
@@ -278,7 +281,7 @@
         </div>
     </div>
 
-    <!-- 커스텀 삭제 확인 모달 (alert/confirm 대체) -->
+    <!-- 커스텀 삭제 확인 모달 -->
     <div id="confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center transform scale-95 transition-transform duration-200" id="confirm-modal-content">
             <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -303,33 +306,25 @@
         const STORAGE_KEY = 'bookmark_dashboard_data';
 
         function init() {
-            loadData();
             setupIconSelector();
             renderLayout();
         }
 
-        function loadData() {
-            const savedData = localStorage.getItem(STORAGE_KEY);
-            if (savedData) {
-                try {
-                    categories = JSON.parse(savedData);
-                    categories.forEach(cat => {
-                        if (!cat.createdAt) cat.createdAt = Date.now();
-                        if (!cat.updatedAt) cat.updatedAt = cat.createdAt;
-                    });
-                } catch (e) {
-                    console.error("데이터 로드 실패", e);
-                    categories = [];
-                }
-            } else {
-                categories = [];
-            }
+        function clearUserData() {
+            categories = [];
+            selectedCategoryId = null;
+            localStorage.removeItem(STORAGE_KEY);
+            renderLayout();
         }
 
         function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
-            if (window.saveToCloud) {
-                window.saveToCloud();
+            if (window.isUserLoggedIn && window.isUserLoggedIn()) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
+                if (window.saveToCloud) {
+                    window.saveToCloud();
+                }
+            } else {
+                showToast('로그인이 필요합니다. 변경사항이 백업되지 않을 수 있습니다.', 'warning');
             }
             renderLayout();
         }
@@ -424,7 +419,20 @@
             const container = document.getElementById('dashboard-content');
             const emptyState = document.getElementById('empty-state');
             
+            const isLoggedIn = window.isUserLoggedIn && window.isUserLoggedIn();
+
+            if (!isLoggedIn) {
+                document.getElementById('empty-state-title').textContent = "구글 로그인이 필요합니다";
+                document.getElementById('empty-state-desc').innerHTML = "상단의 [구글 로그인] 버튼을 눌러 로그인하시면<br>저장된 즐겨찾기를 불러올 수 있습니다.";
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            }
+
             if (!selectedCategoryId || categories.length === 0) {
+                document.getElementById('empty-state-title').textContent = "선택된 카테고리가 없습니다";
+                document.getElementById('empty-state-desc').innerHTML = "왼쪽 목록에서 카테고리를 선택하거나,<br>새로운 카테고리를 만들어주세요.";
                 container.classList.add('hidden');
                 emptyState.classList.remove('hidden');
                 emptyState.classList.add('flex');
@@ -539,6 +547,11 @@
         }
 
         function openCategoryModal(categoryId = null) {
+            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) {
+                showToast('구글 로그인 후 카테고리를 이용하실 수 있습니다.', 'warning');
+                return;
+            }
+
             const nameInput = document.getElementById('category-name');
             const errorMsg = document.getElementById('category-error');
             const modalTitle = document.getElementById('category-modal-title');
@@ -711,6 +724,11 @@
         let currentMetadata = null;
 
         function openBookmarkModal(categoryId, bookmarkId = null) {
+            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) {
+                showToast('구글 로그인 후 북마크를 이용하실 수 있습니다.', 'warning');
+                return;
+            }
+
             document.getElementById('target-category-id').value = categoryId;
             document.getElementById('edit-bookmark-id').value = bookmarkId || '';
             
@@ -806,6 +824,10 @@
         }
 
         function exportDataToJson() {
+            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) {
+                showToast('로그인 후 백업 기능을 이용하실 수 있습니다.', 'warning');
+                return;
+            }
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(categories, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
@@ -817,6 +839,10 @@
         }
 
         function importDataFromJson(event) {
+            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) {
+                showToast('로그인 후 백업 불러오기 기능을 이용하실 수 있습니다.', 'warning');
+                return;
+            }
             const fileReader = new FileReader();
             fileReader.onload = function(e) {
                 try {
@@ -1115,7 +1141,7 @@
         let unsubscribeSnapshot = null;
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBFScKLj-kSpOx7ZlD9YPYLeK5y8BPHTX4",
+            apiKey: "AIzaSyBFSckLj-kSpOx7ZlD9YPYLeK5y8BPHTX4",
             authDomain: "bookmark-dashboard-345cc.firebaseapp.com",
             projectId: "bookmark-dashboard-345cc",
             storageBucket: "bookmark-dashboard-345cc.firebasestorage.app",
@@ -1137,6 +1163,7 @@
                         listenToCloudChanges(user.uid);
                     } else {
                         if (unsubscribeSnapshot) unsubscribeSnapshot();
+                        clearUserData();
                         updateCloudSyncStatus('disconnected');
                     }
                 });
@@ -1144,6 +1171,10 @@
                 console.error("Firebase 초기화 에러:", error);
                 updateCloudSyncStatus('error', error.message);
             }
+        }
+
+        function isUserLoggedIn() {
+            return !!currentUser;
         }
 
         function updateAuthUI(user) {
@@ -1216,14 +1247,7 @@
                 showToast('구글 로그인에 성공했습니다!', 'success');
             } catch (error) {
                 console.error("로그인 에러:", error);
-                
-                if (error.code === 'auth/popup-blocked') {
-                    showToast('브라우저의 팝업 차단을 해제해 주세요!', 'error');
-                } else if (error.code === 'auth/unauthorized-domain') {
-                    showToast('Firebase 콘솔에 syny79.github.io 도메인이 승인되지 않았습니다.', 'error');
-                } else if (error.code === 'auth/operation-not-allowed') {
-                    showToast('Firebase 콘솔 -> Authentication에서 Google 로그인 제공업체를 [활성화]해 주세요!', 'error');
-                } else if (error.code !== 'auth/popup-closed-by-user') {
+                if (error.code !== 'auth/popup-closed-by-user') {
                     showToast(`로그인 실패: ${error.message}`, 'error');
                 }
             }
@@ -1233,6 +1257,8 @@
             try {
                 if (auth) {
                     await signOut(auth);
+                    if (unsubscribeSnapshot) unsubscribeSnapshot();
+                    clearUserData();
                     showToast('로그아웃되었습니다.', 'info');
                 }
             } catch (error) {
@@ -1281,6 +1307,7 @@
         window.closeDataModal = closeDataModal;
         window.exportDataToJson = exportDataToJson;
         window.importDataFromJson = importDataFromJson;
+        window.isUserLoggedIn = isUserLoggedIn;
 
         initFirebase();
     </script>
