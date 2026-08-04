@@ -7,6 +7,7 @@
     <!-- Tailwind CSS 및 FontAwesome 아이콘 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <style>
         :root {
             --primary: #4F46E5;
@@ -21,10 +22,6 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-        }
-
-        .category-section {
-            transition: all 0.3s ease;
         }
 
         /* 썸네일 컨테이너 16:9 비율 유지 */
@@ -1009,264 +1006,15 @@
         let isFirstLoad = true;
         let unsubscribeSnapshot = null;
 
+        // Firebase 설정 (발급받은 실제 설정 값 적용)
+        const defaultFirebaseConfig = {
+            apiKey: "AIzaSyBFSckLj-kSpOx7ZlD9YPYLeK5y8BPHTX4",
+            projectId: "bookmark-dashboard-345cc",
+            authDomain: "bookmark-dashboard-345cc.firebaseapp.com",
+            storageBucket: "bookmark-dashboard-345cc.firebasestorage.app",
+            messagingSenderId: "1064431939109",
+            appId: "1:1064431939109:web:a867509734c203952719cc"
+        };
+
         async function initFirebase() {
-            if (typeof __firebase_config === 'undefined') {
-                updateSyncUI(false, "지원하지 않는 환경");
-                return;
-            }
-
-            try {
-                appId = typeof __app_id !== 'undefined' ? __app_id : 'bookmark-dashboard';
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                onAuthStateChanged(auth, (user) => {
-                    currentUser = user;
-                    updateAuthUI(user);
-                    
-                    if (user) {
-                        setupFirestoreSync();
-                    } else {
-                        if (unsubscribeSnapshot) {
-                            unsubscribeSnapshot();
-                            unsubscribeSnapshot = null;
-                        }
-                        updateSyncUI(false, "로그인이 필요합니다");
-                    }
-                });
-
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } 
-            } catch (e) {
-                console.error("Firebase 초기화 실패:", e);
-                updateSyncUI(false, "연결 실패");
-            }
-        }
-
-        window.loginWithGoogle = async function() {
-            if (!auth) return;
-            const provider = new GoogleAuthProvider();
-            try {
-                await signInWithPopup(auth, provider);
-                showToast('구글 계정으로 로그인되었습니다.', 'success');
-                if (categories.length > 0) {
-                    window.saveToCloud();
-                }
-            } catch (error) {
-                console.error("구글 로그인 실패:", error);
-                if (error.code === 'auth/unauthorized-domain') {
-                    showToast('현재 환경에서는 승인되지 않은 도메인입니다. Firebase 콘솔의 Authorized Domains에 도메인을 추가해주세요.', 'warning');
-                } else {
-                    showToast('로그인 중 오류가 발생했습니다.', 'error');
-                }
-            }
-        };
-
-        window.logoutGoogle = async function() {
-            if (!auth) return;
-            try {
-                await signOut(auth);
-                showToast('로그아웃 되었습니다.', 'info');
-            } catch (error) {
-                console.error("로그아웃 실패:", error);
-            }
-        };
-
-        function updateAuthUI(user) {
-            const authSection = document.getElementById('auth-section');
-            if (!authSection) return;
-
-            if (user) {
-                let displayName = "사용자";
-                if (user.displayName) {
-                    displayName = user.displayName;
-                } else if (user.email) {
-                    displayName = user.email;
-                } else {
-                    displayName = `ID: ${user.uid}`;
-                }
-                
-                let html = `<div class="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-lg border border-green-100" title="고유 ID: ${user.uid}">`;
-                
-                if (user.photoURL) {
-                    html += `<img src="${user.photoURL}" alt="profile" class="w-6 h-6 rounded-full border border-green-200">`;
-                } else {
-                    html += `<div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs"><i class="fas fa-user"></i></div>`;
-                }
-                
-                html += `<span class="text-[11px] font-bold text-green-700 hidden sm:inline max-w-[200px] overflow-hidden whitespace-nowrap text-ellipsis">${escapeHtml(displayName)}</span>`;
-                
-                html += `<button onclick="logoutGoogle()" class="ml-2 px-2 py-1 bg-white border border-green-200 text-green-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600 rounded-md text-[10px] font-bold shadow-sm transition-colors flex items-center gap-1" title="로그아웃">
-                    <i class="fas fa-sign-out-alt"></i> 로그아웃
-                </button>`;
-                
-                html += `</div>`;
-            } else {
-                authSection.innerHTML = `
-                    <button onclick="loginWithGoogle()" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center gap-2">
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-4 h-4" alt="Google">
-                        <span class="hidden sm:inline">구글 로그인</span>
-                    </button>
-                `;
-            }
-        }
-
-        function setupFirestoreSync() {
-            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'dashboard_data', 'main_state');
-            
-            updateSyncUI(true, "동기화 준비 완료");
-
-            if (unsubscribeSnapshot) {
-                unsubscribeSnapshot();
-            }
-
-            unsubscribeSnapshot = onSnapshot(docRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    if (data && data.categoriesJson) {
-                        try {
-                            const cloudCategories = JSON.parse(data.categoriesJson);
-                            if (JSON.stringify(categories) !== JSON.stringify(cloudCategories)) {
-                                categories = cloudCategories;
-                                localStorage.setItem('bookmark_dashboard_data', JSON.stringify(categories));
-                                renderLayout();
-                                
-                                if (!isFirstLoad) {
-                                    showToast('다른 기기의 변경사항이 동기화되었습니다.', 'info');
-                                }
-                            }
-                            updateSyncUI(true, "클라우드와 최신 상태 유지 중");
-                        } catch(e) {
-                            console.error("클라우드 데이터 파싱 에러", e);
-                        }
-                    }
-                }
-                isFirstLoad = false;
-            }, (error) => {
-                console.error("Firestore 동기화 에러:", error);
-                updateSyncUI(false, "동기화 오류");
-            });
-        }
-
-        window.saveToCloud = async function() {
-            if (!currentUser || !db) return;
-            
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'dashboard_data', 'main_state');
-                await setDoc(docRef, {
-                    categoriesJson: JSON.stringify(categories),
-                    updatedAt: Date.now()
-                });
-                updateSyncUI(true, "클라우드에 안전하게 저장됨");
-            } catch (e) {
-                console.error("클라우드 저장 실패:", e);
-                updateSyncUI(false, "저장 실패");
-            }
-        };
-
-        function updateSyncUI(isSynced, message) {
-            const statusDiv = document.getElementById('cloud-sync-status');
-            if (!statusDiv) return;
-
-            if (isSynced) {
-                statusDiv.innerHTML = `
-                    <span class="relative flex h-3 w-3">
-                      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-sm"></span>
-                    </span>
-                    <span class="text-green-700 font-medium">${message}</span>
-                `;
-            } else {
-                statusDiv.innerHTML = `
-                    <span class="relative flex h-3 w-3">
-                      <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-sm"></span>
-                    </span>
-                    <span class="text-red-700 font-medium">${message}</span>
-                    ${!currentUser ? `<button onclick="loginWithGoogle()" class="ml-2 text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-100">구글 로그인하기</button>` : ''}
-                `;
-            }
-        }
-
-        initFirebase();
-    </script>
-
-    <script>
-        function openDataModal() {
-            const modal = document.getElementById('data-modal');
-            const content = document.getElementById('data-modal-content');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95');
-                content.classList.add('scale-100');
-            }, 10);
-        }
-
-        function closeDataModal() {
-            const modal = document.getElementById('data-modal');
-            const content = document.getElementById('data-modal-content');
-            content.classList.remove('scale-100');
-            content.classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
-        }
-
-        function exportDataToJson() {
-            if (categories.length === 0) {
-                showToast('백업할 데이터가 없습니다.', 'warning');
-                return;
-            }
-            
-            const dataStr = JSON.stringify(categories, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            const dateStr = new Date().toISOString().slice(0, 10);
-            a.download = `bookmark_backup_${dateStr}.json`;
-            
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showToast('데이터가 백업 파일로 저장되었습니다.', 'success');
-            closeDataModal();
-        }
-
-        function importDataFromJson(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    
-                    if (Array.isArray(importedData)) {
-                        if (confirm('기존 데이터를 모두 덮어쓰고 복구하시겠습니까?')) {
-                            categories = importedData;
-                            saveData();
-                            renderLayout();
-                            showToast('데이터가 성공적으로 복구되었습니다.', 'success');
-                            closeDataModal();
-                        }
-                    } else {
-                        throw new Error('Invalid Format');
-                    }
-                } catch (error) {
-                    console.error("데이터 복구 실패:", error);
-                    showToast('잘못된 백업 파일 형식입니다.', 'error');
-                }
-                
-                event.target.value = ''; 
-            };
-            
-            reader.readAsText(file);
-        }
-    </script>
-</body>
-</html>
+<!-- ... existing code -->
