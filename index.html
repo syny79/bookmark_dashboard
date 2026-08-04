@@ -76,7 +76,7 @@
                 </div>
                 
                 <!-- 데이터 관리 및 백업 버튼 -->
-                <button onclick="openDataModal()" class="px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-2 border border-transparent hover:border-indigo-100 shadow-sm cursor-pointer" title="데이터 관리 및 백업">
+                <button onclick="window.openDataModal()" class="px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-2 border border-transparent hover:border-indigo-100 shadow-sm cursor-pointer" title="데이터 관리 및 백업">
                     <i class="fas fa-cloud text-lg"></i> <span class="hidden sm:inline text-sm font-bold">데이터 관리</span>
                 </button>
             </div>
@@ -237,7 +237,7 @@
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-200" id="data-modal-content">
             <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-gray-900">데이터 관리 및 백업</h3>
-                <button onclick="closeDataModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                <button onclick="window.closeDataModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -263,7 +263,7 @@
                         <i class="fas fa-save"></i> 수동 백업 및 복구
                     </h4>
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="exportDataToJson()" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-colors text-indigo-700 cursor-pointer">
+                        <button onclick="window.exportDataToJson()" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-colors text-indigo-700 cursor-pointer">
                             <i class="fas fa-file-download text-2xl mb-2"></i>
                             <span class="text-sm font-bold">데이터 내보내기</span>
                             <span class="text-xs opacity-70 mt-1">.json 백업 파일</span>
@@ -273,7 +273,7 @@
                             <i class="fas fa-file-upload text-2xl mb-2"></i>
                             <span class="text-sm font-bold">데이터 불러오기</span>
                             <span class="text-xs opacity-70 mt-1">기존 백업 파일</span>
-                            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importDataFromJson(event)">
+                            <input type="file" id="import-file" accept=".json" class="hidden" onchange="window.importDataFromJson(event)">
                         </label>
                     </div>
                 </div>
@@ -310,6 +310,7 @@
             renderLayout();
         }
 
+        // 로그인 안됨 / 로그아웃 시 캐시 및 데이터 비우기
         function clearUserData() {
             categories = [];
             selectedCategoryId = null;
@@ -368,6 +369,16 @@
         function renderSidebar() {
             const listContainer = document.getElementById('sidebar-category-list');
             listContainer.innerHTML = '';
+
+            const isLoggedIn = window.isUserLoggedIn && window.isUserLoggedIn();
+            if (!isLoggedIn) {
+                listContainer.innerHTML = `
+                    <div class="p-4 text-center text-xs text-gray-400">
+                        로그인 후 카테고리가 표시됩니다.
+                    </div>
+                `;
+                return;
+            }
 
             const sortedCategories = sortCategories();
 
