@@ -4,9 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>내 즐겨찾기 대시보드</title>
+    
     <!-- Tailwind CSS 및 FontAwesome 아이콘 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- 모바일 터치 환경에서의 HTML5 Drag & Drop 지원을 위한 Polyfill -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/scroll-behaviour.min.js"></script>
     
     <style>
         :root {
@@ -22,6 +28,8 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
+            /* 모바일 드래그 시 화면 튕김 방지 */
+            overscroll-behavior-y: none;
         }
 
         .thumbnail-container {
@@ -54,6 +62,31 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        
+        /* 사이드바 카테고리 Drag & Drop Visuals */
+        .drag-over {
+            background-color: #EEF2FF !important; 
+            border: 2px dashed #818CF8 !important; 
+        }
+        
+        /* 카드 간 Reordering Drag & Drop Visuals */
+        .card-drag-over {
+            opacity: 0.5;
+            transform: scale(0.98);
+            border-color: #6366f1 !important;
+            box-shadow: inset 0 0 0 2px #6366f1;
+        }
+
+        /* 고정 핀 톡톡 튀는 애니메이션 정의 */
+        @keyframes pin-bounce {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.5) rotate(-20deg); color: #4F46E5; }
+            70% { transform: scale(1.5) rotate(20deg); color: #4F46E5; }
+            100% { transform: scale(1); }
+        }
+        .pin-animating i {
+            animation: pin-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col bg-gray-50">
@@ -68,14 +101,11 @@
             </div>
             
             <div class="flex items-center gap-2 sm:gap-4">
-                <!-- 로그인 상태 표시 영역 -->
                 <div id="auth-section" class="flex items-center gap-2">
                     <button onclick="window.handleGoogleLogin()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer">
                         <i class="fab fa-google"></i> 구글 로그인
                     </button>
                 </div>
-                
-                <!-- 데이터 관리 및 백업 버튼 -->
                 <button onclick="window.openDataModal()" class="px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-2 border border-transparent hover:border-indigo-100 shadow-sm cursor-pointer" title="데이터 관리 및 백업">
                     <i class="fas fa-cloud text-lg"></i> <span class="hidden sm:inline text-sm font-bold">데이터 관리</span>
                 </button>
@@ -85,7 +115,6 @@
 
     <div class="flex-grow max-w-7xl mx-auto w-full flex flex-col md:flex-row px-4 sm:px-6 lg:px-8 py-6 gap-6 h-[calc(100vh-73px)]">
         
-        <!-- 왼쪽 사이드바 (카테고리 목록 및 정렬) -->
         <aside class="w-full md:w-64 flex-shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-64 md:h-full overflow-hidden">
             <div class="p-4 border-b border-gray-50">
                 <div class="flex justify-between items-center mb-4">
@@ -110,10 +139,7 @@
             </div>
         </aside>
 
-        <!-- 오른쪽 메인 컨텐츠 영역 -->
         <main class="flex-1 min-w-0 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden relative">
-            
-            <!-- 빈 상태 화면 -->
             <div id="empty-state" class="hidden h-full flex-col items-center justify-center p-8 text-center bg-gray-50">
                 <div class="w-20 h-20 bg-white shadow-sm rounded-full flex items-center justify-center mb-4 border border-gray-100">
                     <i class="fas fa-folder-open text-3xl text-gray-400"></i>
@@ -125,15 +151,13 @@
                 </button>
             </div>
 
-            <!-- 선택된 카테고리의 북마크 렌더링 영역 -->
             <div id="dashboard-content" class="flex-1 overflow-y-auto p-4 sm:p-6 hide-scrollbar relative">
                 <!-- 북마크 컨텐츠 추가 위치 -->
             </div>
-
         </main>
     </div>
 
-    <!-- 모달: 새 카테고리 추가/수정 -->
+    <!-- 새 카테고리 모달 -->
     <div id="category-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-200" id="category-modal-content">
             <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
@@ -147,7 +171,7 @@
                 <div class="mb-5">
                     <label for="category-name" class="block text-sm font-medium text-gray-700 mb-2">카테고리 이름</label>
                     <input type="text" id="category-name" placeholder="예: 업무용, 디자인 레퍼런스, 뉴스" 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                            onkeypress="if(event.key === 'Enter') saveCategory()">
                     <p id="category-error" class="text-red-500 text-xs mt-2 hidden">카테고리 이름을 입력해주세요.</p>
                 </div>
@@ -169,7 +193,30 @@
         </div>
     </div>
 
-    <!-- 모달: 새 북마크(링크) 추가/수정 -->
+    <!-- 링크 이동 팝업 모달 -->
+    <div id="move-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 transform scale-95 transition-transform duration-200" id="move-modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-900">다른 카테고리로 이동</h3>
+                <button onclick="window.closeMoveModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <input type="hidden" id="move-source-cat-id">
+                <input type="hidden" id="move-target-bm-id">
+                <label for="move-target-category" class="block text-sm font-medium text-gray-700 mb-2">이동할 목적지 선택</label>
+                <select id="move-target-category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </select>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-end gap-3">
+                <button onclick="window.closeMoveModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">취소</button>
+                <button onclick="window.executeMoveBookmark()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">이동하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 새 북마크 추가 모달 -->
     <div id="bookmark-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-200" id="bookmark-modal-content">
             <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
@@ -185,24 +232,21 @@
                 <div>
                     <label for="bookmark-url" class="block text-sm font-medium text-gray-700 mb-1">URL 주소 <span class="text-red-500">*</span></label>
                     <input type="url" id="bookmark-url" placeholder="https://example.com" 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                            onblur="fetchMetadata(this.value)">
                     <p id="url-error" class="text-red-500 text-xs mt-1 hidden">유효한 URL을 입력해주세요 (http:// 또는 https:// 포함).</p>
                 </div>
-
                 <div>
                     <label for="bookmark-title" class="block text-sm font-medium text-gray-700 mb-1">제목 (선택사항)</label>
                     <input type="text" id="bookmark-title" placeholder="자동으로 가져옵니다" 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
-
                 <div>
                     <label for="bookmark-desc" class="block text-sm font-medium text-gray-700 mb-1">설명 (선택사항)</label>
                     <textarea id="bookmark-desc" rows="2" placeholder="자동으로 가져옵니다" 
-                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-none"></textarea>
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
                 </div>
                 
-                <!-- 미리보기 영역 -->
                 <div id="preview-area" class="hidden mt-4 border border-gray-200 rounded-lg p-2 bg-gray-50">
                     <p class="text-xs text-gray-500 mb-2 font-semibold">미리보기</p>
                     <div class="flex gap-3">
@@ -216,7 +260,6 @@
                     </div>
                 </div>
 
-                <!-- 로딩 인디케이터 -->
                 <div id="loading-indicator" class="hidden flex items-center justify-center py-4">
                     <i class="fas fa-spinner fa-spin text-indigo-500 text-2xl"></i>
                     <span class="ml-2 text-sm text-gray-600">페이지 정보 가져오는 중...</span>
@@ -224,15 +267,15 @@
             </div>
             
             <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-end gap-3">
-                <button onclick="closeBookmarkModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none">취소</button>
-                <button id="btn-save-bookmark" onclick="saveBookmark()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none shadow-sm flex items-center gap-2">
+                <button onclick="closeBookmarkModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">취소</button>
+                <button id="btn-save-bookmark" onclick="saveBookmark()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">
                     <span id="btn-save-text"><i class="fas fa-save"></i> 저장하기</span>
                 </button>
             </div>
         </div>
     </div>
     
-    <!-- 모달: 데이터 관리(백업/복구 및 동기화) -->
+    <!-- 데이터 관리 모달 -->
     <div id="data-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-200" id="data-modal-content">
             <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
@@ -242,37 +285,28 @@
                 </button>
             </div>
             <div class="p-6 space-y-6">
-                <!-- 클라우드 동기화 상태 -->
                 <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                     <h4 class="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                         <i class="fas fa-cloud"></i> 클라우드 동기화 상태
                     </h4>
                     <div id="cloud-sync-status" class="flex items-center gap-2 text-sm text-gray-600">
-                        <span class="relative flex h-3 w-3">
-                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
-                        </span>
                         연결 확인 중...
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">구글 계정으로 로그인하시면 기기 간 실시간 동기화가 활성화됩니다.</p>
                 </div>
 
-                <!-- 수동 백업 및 복구 -->
                 <div>
                     <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                         <i class="fas fa-save"></i> 수동 백업 및 복구
                     </h4>
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="window.exportDataToJson()" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-colors text-indigo-700 cursor-pointer">
+                        <button onclick="window.exportDataToJson()" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 cursor-pointer">
                             <i class="fas fa-file-download text-2xl mb-2"></i>
                             <span class="text-sm font-bold">데이터 내보내기</span>
-                            <span class="text-xs opacity-70 mt-1">.json 백업 파일</span>
                         </button>
                         
-                        <label for="import-file" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-gray-200 bg-white hover:bg-gray-50 transition-colors text-gray-700 cursor-pointer">
+                        <label for="import-file" class="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700 cursor-pointer">
                             <i class="fas fa-file-upload text-2xl mb-2"></i>
                             <span class="text-sm font-bold">데이터 불러오기</span>
-                            <span class="text-xs opacity-70 mt-1">기존 백업 파일</span>
                             <input type="file" id="import-file" accept=".json" class="hidden" onchange="window.importDataFromJson(event)">
                         </label>
                     </div>
@@ -281,7 +315,7 @@
         </div>
     </div>
 
-    <!-- 커스텀 삭제 확인 모달 -->
+    <!-- 삭제 확인 모달 -->
     <div id="confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center transform scale-95 transition-transform duration-200" id="confirm-modal-content">
             <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -290,14 +324,13 @@
             <h3 id="confirm-modal-title" class="text-base font-bold text-gray-900 mb-2">정말 삭제하시겠습니까?</h3>
             <p id="confirm-modal-desc" class="text-xs text-gray-500 mb-6 leading-relaxed">이 작업은 취소할 수 없습니다.</p>
             <div class="flex gap-3 justify-center">
-                <button id="confirm-cancel-btn" class="px-4 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer">취소</button>
-                <button id="confirm-ok-btn" class="px-4 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm cursor-pointer">삭제</button>
+                <button id="confirm-cancel-btn" class="px-4 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">취소</button>
+                <button id="confirm-ok-btn" class="px-4 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg">삭제</button>
             </div>
         </div>
     </div>
 
-    <!-- 토스트 알림 컨테이너 -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <script>
         let categories = [];
@@ -305,12 +338,22 @@
         let currentSortMode = 'updatedAt_desc';
         const STORAGE_KEY = 'bookmark_dashboard_data';
 
+        // 모바일 터치 기반 HTML5 Drag&Drop 활성화 폴리필 설정
+        window.addEventListener('load', function() {
+            MobileDragDrop.polyfill({
+                holdToDrag: 250, // 모바일에서 드래그 시작 전 0.25초간 길게 누름(스크롤 오작동 방지)
+                dragImageTranslateOverride: MobileDragDrop.scrollBehaviourDragImageTranslateOverride
+            });
+            // iOS Safari 스크롤 이슈 방지
+            window.addEventListener('touchmove', function() {}, {passive: false});
+            init();
+        });
+
         function init() {
             setupIconSelector();
             renderLayout();
         }
 
-        // 로그인 안됨 / 로그아웃 시 캐시 및 데이터 비우기
         function clearUserData() {
             categories = [];
             selectedCategoryId = null;
@@ -321,9 +364,7 @@
         function saveData() {
             if (window.isUserLoggedIn && window.isUserLoggedIn()) {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
-                if (window.saveToCloud) {
-                    window.saveToCloud();
-                }
+                if (window.saveToCloud) window.saveToCloud();
             } else {
                 showToast('로그인이 필요합니다. 변경사항이 백업되지 않을 수 있습니다.', 'warning');
             }
@@ -366,17 +407,91 @@
             renderMainContent();
         }
 
+        
+        // 1. 공통 Drag 시작 이벤트
+        window.handleDragStart = function(e, categoryId, bookmarkId) {
+            e.dataTransfer.setData('application/json', JSON.stringify({ categoryId, bookmarkId }));
+            e.dataTransfer.effectAllowed = 'move';
+            
+            // 모바일에서 드래그 시 고스트 이미지 최적화
+            setTimeout(() => { e.target.classList.add('opacity-50'); }, 0);
+        };
+        window.handleDragEnd = function(e) {
+            e.target.classList.remove('opacity-50');
+        };
+
+        // 2. 카테고리(사이드바) 이동 Drag & Drop 처리
+        window.handleSidebarDragOver = function(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        };
+        window.handleSidebarDragLeave = function(e) {
+            e.currentTarget.classList.remove('drag-over');
+        };
+        window.handleSidebarDrop = function(e, targetCategoryId) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            try {
+                const data = JSON.parse(e.dataTransfer.getData('application/json'));
+                if (data.categoryId === targetCategoryId) return; 
+                
+                const sourceCat = categories.find(c => c.id === data.categoryId);
+                const targetCat = categories.find(c => c.id === targetCategoryId);
+                
+                if (sourceCat && targetCat) {
+                    const bmIndex = sourceCat.bookmarks.findIndex(b => b.id === data.bookmarkId);
+                    if (bmIndex > -1) {
+                        const bm = sourceCat.bookmarks.splice(bmIndex, 1)[0];
+                        targetCat.bookmarks.unshift(bm); 
+                        sourceCat.updatedAt = Date.now();
+                        targetCat.updatedAt = Date.now();
+                        saveData();
+                        showToast('링크가 새 카테고리로 이동되었습니다.', 'success');
+                    }
+                }
+            } catch (err) { console.error("Sidebar Drop failed:", err); }
+        };
+
+        // 3. 카드 순서 변경(Reordering) Drag & Drop 처리
+        window.handleCardDragOver = function(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('card-drag-over');
+        };
+        window.handleCardDragLeave = function(e) {
+            e.currentTarget.classList.remove('card-drag-over');
+        };
+        window.handleCardDrop = function(e, targetCategoryId, targetBookmarkId) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('card-drag-over');
+            
+            try {
+                const data = JSON.parse(e.dataTransfer.getData('application/json'));
+                
+                // 동일 카테고리 내부에서의 순서 변경(Reorder) 로직
+                if (data.categoryId === targetCategoryId && data.bookmarkId !== targetBookmarkId) {
+                    const cat = categories.find(c => c.id === targetCategoryId);
+                    const sourceIdx = cat.bookmarks.findIndex(b => b.id === data.bookmarkId);
+                    const targetIdx = cat.bookmarks.findIndex(b => b.id === targetBookmarkId);
+                    
+                    if (sourceIdx > -1 && targetIdx > -1) {
+                        const [movedBm] = cat.bookmarks.splice(sourceIdx, 1);
+                        // 목표 위치 앞에 삽입 (순서 교체)
+                        cat.bookmarks.splice(targetIdx, 0, movedBm);
+                        cat.updatedAt = Date.now();
+                        saveData();
+                        // 순서 변경 시 조용한 UI 피드백
+                    }
+                }
+            } catch(err) { console.error("Card Drop failed:", err); }
+        };
+
         function renderSidebar() {
             const listContainer = document.getElementById('sidebar-category-list');
             listContainer.innerHTML = '';
 
             const isLoggedIn = window.isUserLoggedIn && window.isUserLoggedIn();
             if (!isLoggedIn) {
-                listContainer.innerHTML = `
-                    <div class="p-4 text-center text-xs text-gray-400">
-                        로그인 후 카테고리가 표시됩니다.
-                    </div>
-                `;
+                listContainer.innerHTML = `<div class="p-4 text-center text-xs text-gray-400">로그인 후 카테고리가 표시됩니다.</div>`;
                 return;
             }
 
@@ -387,20 +502,23 @@
                 const bookmarkCount = cat.bookmarks ? cat.bookmarks.length : 0;
                 
                 const itemDiv = document.createElement('div');
-                itemDiv.className = `w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between gap-2 transition-all duration-200 group cursor-pointer ${
+                itemDiv.className = `w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between gap-2 transition-all duration-200 group cursor-pointer border ${
                     isSelected 
-                        ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 shadow-sm' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
+                        ? 'bg-indigo-50 text-indigo-700 font-bold border-indigo-100 shadow-sm' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-transparent'
                 }`;
                 
+                // 사이드바 Drop 타겟 바인딩
+                itemDiv.ondragover = (e) => window.handleSidebarDragOver(e);
+                itemDiv.ondragleave = (e) => window.handleSidebarDragLeave(e);
+                itemDiv.ondrop = (e) => window.handleSidebarDrop(e, cat.id);
+                
                 itemDiv.onclick = (e) => {
-                    if(!e.target.closest('button')) {
-                        selectCategory(cat.id);
-                    }
+                    if(!e.target.closest('button')) selectCategory(cat.id);
                 };
                 
                 itemDiv.innerHTML = `
-                    <div class="flex items-center gap-3 overflow-hidden flex-grow">
+                    <div class="flex items-center gap-3 overflow-hidden flex-grow pointer-events-none">
                         <div class="${isSelected ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'} transition-colors w-5 text-center flex-shrink-0">
                             <i class="fas ${cat.icon}"></i>
                         </div>
@@ -408,7 +526,7 @@
                     </div>
                     
                     <div class="flex items-center gap-1 flex-shrink-0">
-                        <div class="text-[10px] ${isSelected ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'} px-2 py-0.5 rounded-full font-medium transition-colors group-hover:hidden">
+                        <div class="text-[10px] ${isSelected ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'} px-2 py-0.5 rounded-full font-medium transition-colors group-hover:hidden pointer-events-none">
                             ${bookmarkCount}
                         </div>
                         <div class="hidden group-hover:flex items-center gap-1">
@@ -426,15 +544,97 @@
             });
         }
 
+        window.togglePin = function(e, categoryId, bookmarkId) {
+            e.stopPropagation();
+            const btn = e.currentTarget;
+            
+            // 핀 애니메이션 CSS 클래스 적용
+            btn.classList.add('pin-animating');
+            
+            // 애니메이션 지속 시간(0.4초) 대기 후 데이터 변경 및 리렌더링
+            setTimeout(() => {
+                const cat = categories.find(c => c.id === categoryId);
+                if(cat) {
+                    const bm = cat.bookmarks.find(b => b.id === bookmarkId);
+                    if(bm) {
+                        bm.isPinned = !bm.isPinned;
+                        cat.updatedAt = Date.now();
+                        saveData();
+                        showToast(bm.isPinned ? '상단에 고정되었습니다.' : '상단 고정이 해제되었습니다.', 'success');
+                    }
+                }
+            }, 400); 
+        };
+
+        window.openMoveModal = function(categoryId, bookmarkId) {
+            const selectEl = document.getElementById('move-target-category');
+            selectEl.innerHTML = '';
+            
+            categories.forEach(cat => {
+                if(cat.id !== categoryId) {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = cat.name;
+                    selectEl.appendChild(option);
+                }
+            });
+
+            if(selectEl.options.length === 0) {
+                showToast('이동할 다른 카테고리가 없습니다.', 'warning');
+                return;
+            }
+
+            document.getElementById('move-source-cat-id').value = categoryId;
+            document.getElementById('move-target-bm-id').value = bookmarkId;
+            
+            const modal = document.getElementById('move-modal');
+            const content = document.getElementById('move-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        };
+
+        window.closeMoveModal = function() {
+            const modal = document.getElementById('move-modal');
+            const content = document.getElementById('move-modal-content');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 200);
+        };
+
+        window.executeMoveBookmark = function() {
+            const sourceId = document.getElementById('move-source-cat-id').value;
+            const bmId = document.getElementById('move-target-bm-id').value;
+            const targetId = document.getElementById('move-target-category').value;
+
+            if(!targetId) return;
+
+            const sourceCat = categories.find(c => c.id === sourceId);
+            const targetCat = categories.find(c => c.id === targetId);
+
+            if(sourceCat && targetCat) {
+                const bmIndex = sourceCat.bookmarks.findIndex(b => b.id === bmId);
+                if(bmIndex > -1) {
+                    const bm = sourceCat.bookmarks.splice(bmIndex, 1)[0];
+                    targetCat.bookmarks.unshift(bm);
+                    
+                    sourceCat.updatedAt = Date.now();
+                    targetCat.updatedAt = Date.now();
+                    saveData();
+                    window.closeMoveModal();
+                    showToast('링크가 성공적으로 이동되었습니다.', 'success');
+                }
+            }
+        };
+
         function renderMainContent() {
             const container = document.getElementById('dashboard-content');
             const emptyState = document.getElementById('empty-state');
-            
             const isLoggedIn = window.isUserLoggedIn && window.isUserLoggedIn();
 
             if (!isLoggedIn) {
-                document.getElementById('empty-state-title').textContent = "구글 로그인이 필요합니다";
-                document.getElementById('empty-state-desc').innerHTML = "상단의 [구글 로그인] 버튼을 눌러 로그인하시면<br>저장된 즐겨찾기를 불러올 수 있습니다.";
                 container.classList.add('hidden');
                 emptyState.classList.remove('hidden');
                 emptyState.classList.add('flex');
@@ -478,12 +678,6 @@
                         <button onclick="openBookmarkModal('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
                             <i class="fas fa-plus"></i> 링크 추가
                         </button>
-                        <button onclick="openCategoryModal('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer" title="카테고리 수정">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="deleteCategory('${category.id}')" class="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg transition-colors flex items-center gap-1 cursor-pointer" title="카테고리 삭제">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
                     </div>
                 </div>
             `;
@@ -496,13 +690,20 @@
                             <i class="fas fa-link text-2xl text-gray-300"></i>
                         </div>
                         <p class="text-gray-500 text-sm mb-4 font-medium">저장된 링크가 없습니다.</p>
-                        <button onclick="openBookmarkModal('${category.id}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-5 py-2.5 rounded-lg transition-colors border border-indigo-100 shadow-sm cursor-pointer">첫 번째 링크 추가하기</button>
+                        <button onclick="openBookmarkModal('${category.id}')" class="text-indigo-600 font-bold text-sm bg-indigo-50 px-5 py-2.5 rounded-lg border border-indigo-100 shadow-sm cursor-pointer">첫 번째 링크 추가하기</button>
                     </div>
                 `;
             } else {
                 gridHtml = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-10">`;
                 
-                category.bookmarks.forEach(bm => {
+                // 정렬: 우선순위 핀 여부로 1차 분류, 그 외 사용자가 설정한 배열 순서 유지(Reorder 반영)
+                const sortedBookmarks = [...category.bookmarks].sort((a, b) => {
+                    if (a.isPinned && !b.isPinned) return -1;
+                    if (!a.isPinned && b.isPinned) return 1;
+                    return 0; 
+                });
+                
+                sortedBookmarks.forEach(bm => {
                     const fallbackColor = stringToColor(bm.domain || bm.url);
                     const fallbackInitial = (bm.domain || bm.title || "?").charAt(0).toUpperCase();
                     
@@ -517,10 +718,21 @@
                     }
 
                     const dateStr = new Date(bm.addedAt).toLocaleDateString('ko-KR', { year: '2-digit', month: 'short', day: 'numeric' });
+                    
+                    // 핀 UI 설정
+                    const pinBadge = bm.isPinned ? `<div class="absolute top-2 right-2 z-10 bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md border border-white transition-transform duration-300 hover:scale-110"><i class="fas fa-thumbtack text-[10px]"></i></div>` : '';
+                    const cardBorder = bm.isPinned ? 'border-indigo-400 ring-1 ring-indigo-200' : 'border-gray-200';
 
                     gridHtml += `
-                        <div class="bookmark-card bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-full relative group shadow-sm">
-                            <a href="${escapeHtml(bm.url)}" target="_blank" rel="noopener noreferrer" class="block flex-grow focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div draggable="true" 
+                             ondragstart="window.handleDragStart(event, '${category.id}', '${bm.id}')"
+                             ondragend="window.handleDragEnd(event)"
+                             ondragover="window.handleCardDragOver(event)"
+                             ondragleave="window.handleCardDragLeave(event)"
+                             ondrop="window.handleCardDrop(event, '${category.id}', '${bm.id}')"
+                             class="bookmark-card bg-white border ${cardBorder} rounded-lg overflow-hidden flex flex-col h-full relative group shadow-sm cursor-move hover:shadow-md transition-all duration-200">
+                            ${pinBadge}
+                            <a href="${escapeHtml(bm.url)}" target="_blank" rel="noopener noreferrer" class="block flex-grow focus:outline-none">
                                 <div class="thumbnail-container border-b border-gray-100 bg-gray-50">
                                     ${imageHtml}
                                 </div>
@@ -533,13 +745,16 @@
                                     <p class="text-[10px] text-gray-400 line-clamp-2 flex-grow leading-tight">${escapeHtml(bm.desc || '설명 없음')}</p>
                                 </div>
                             </a>
-                            <div class="px-3 py-2 bg-gray-50 border-t border-gray-100 flex justify-between items-center mt-auto">
-                                <span class="text-[9px] text-gray-400 font-medium flex items-center gap-1"><i class="far fa-clock"></i>${dateStr}</span>
-                                <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-gray-50 rounded-md">
-                                    <button onclick="copyToClipboard('${escapeHtml(bm.url)}'); event.stopPropagation();" class="text-gray-500 hover:text-indigo-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors cursor-pointer" title="링크 복사">
-                                        <i class="far fa-copy text-[10px]"></i>
+                            <div class="px-2 py-2 bg-gray-50 border-t border-gray-100 flex justify-between items-center mt-auto">
+                                <span class="text-[9px] text-gray-400 font-medium flex items-center gap-1 pointer-events-none"><i class="far fa-clock"></i>${dateStr}</span>
+                                <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 bg-gray-50 rounded-md">
+                                    <button onclick="window.togglePin(event, '${category.id}', '${bm.id}')" class="${bm.isPinned ? 'text-indigo-600 hover:bg-indigo-100' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-200'} w-6 h-6 rounded flex items-center justify-center transition-colors cursor-pointer" title="${bm.isPinned ? '고정 해제' : '상단 고정'}">
+                                        <i class="fas fa-thumbtack text-[10px]"></i>
                                     </button>
-                                    <button onclick="openBookmarkModal('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-blue-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors cursor-pointer" title="수정">
+                                    <button onclick="window.openMoveModal('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-blue-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors cursor-pointer" title="카테고리 이동">
+                                        <i class="fas fa-exchange-alt text-[10px]"></i>
+                                    </button>
+                                    <button onclick="openBookmarkModal('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-green-600 hover:bg-gray-200 w-6 h-6 rounded flex items-center justify-center transition-colors cursor-pointer" title="수정">
                                         <i class="far fa-edit text-[10px]"></i>
                                     </button>
                                     <button onclick="deleteBookmark('${category.id}', '${bm.id}'); event.stopPropagation();" class="text-gray-500 hover:text-red-600 hover:bg-red-100 w-6 h-6 rounded flex items-center justify-center transition-colors cursor-pointer" title="삭제">
@@ -574,12 +789,10 @@
             if (categoryId) {
                 const category = categories.find(c => c.id === categoryId);
                 if (!category) return;
-                
                 modalTitle.textContent = '카테고리 수정';
                 saveBtnText.innerHTML = '<i class="fas fa-save"></i> 수정하기';
                 editIdInput.value = categoryId;
                 nameInput.value = category.name;
-                
                 document.getElementById('selected-icon').value = category.icon;
                 const btns = document.querySelectorAll('.icon-btn');
                 btns.forEach(b => {
@@ -591,20 +804,17 @@
                         b.classList.add('bg-gray-100', 'text-gray-600', 'border-transparent');
                     }
                 });
-                
             } else {
                 modalTitle.textContent = '새 카테고리 만들기';
                 saveBtnText.innerHTML = '추가하기';
                 editIdInput.value = '';
                 nameInput.value = '';
-                
                 const firstIconBtn = document.querySelector('.icon-btn');
                 if (firstIconBtn) firstIconBtn.click();
             }
             
             const modal = document.getElementById('category-modal');
             const content = document.getElementById('category-modal-content');
-            
             modal.classList.remove('hidden');
             setTimeout(() => {
                 content.classList.remove('scale-95');
@@ -616,13 +826,9 @@
         function closeCategoryModal() {
             const modal = document.getElementById('category-modal');
             const content = document.getElementById('category-modal-content');
-            
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
-            
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
+            setTimeout(() => { modal.classList.add('hidden'); }, 200);
         }
 
         function setupIconSelector() {
@@ -633,10 +839,8 @@
                         b.classList.remove('bg-indigo-100', 'text-indigo-600', 'border-indigo-500');
                         b.classList.add('bg-gray-100', 'text-gray-600', 'border-transparent');
                     });
-                    
                     this.classList.remove('bg-gray-100', 'text-gray-600', 'border-transparent');
                     this.classList.add('bg-indigo-100', 'text-indigo-600', 'border-indigo-500');
-                    
                     document.getElementById('selected-icon').value = this.dataset.icon;
                 });
             });
@@ -664,22 +868,15 @@
                     showToast('카테고리가 수정되었습니다.', 'success');
                 }
             } else {
-                const newCategory = {
+                categories.push({
                     id: generateId(),
                     name: name,
                     icon: icon,
                     bookmarks: [],
                     createdAt: Date.now(),
                     updatedAt: Date.now()
-                };
-                categories.push(newCategory);
-                selectedCategoryId = newCategory.id;
-                
-                if(currentSortMode.includes('createdAt') || currentSortMode.includes('updatedAt')) {
-                    currentSortMode = 'updatedAt_desc';
-                    document.getElementById('sort-select').value = 'updatedAt_desc';
-                }
-
+                });
+                selectedCategoryId = categories[categories.length - 1].id;
                 showToast('새 카테고리가 추가되었습니다.', 'success');
             }
 
@@ -690,82 +887,50 @@
         function showConfirm(title, desc, onConfirm) {
             const modal = document.getElementById('confirm-modal');
             const content = document.getElementById('confirm-modal-content');
-            const titleEl = document.getElementById('confirm-modal-title');
-            const descEl = document.getElementById('confirm-modal-desc');
-            const okBtn = document.getElementById('confirm-ok-btn');
-            const cancelBtn = document.getElementById('confirm-cancel-btn');
-
-            titleEl.textContent = title;
-            descEl.textContent = desc;
-
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-desc').textContent = desc;
+            
             const close = () => {
                 content.classList.remove('scale-100');
                 content.classList.add('scale-95');
                 setTimeout(() => { modal.classList.add('hidden'); }, 200);
             };
 
-            okBtn.onclick = () => {
-                close();
-                onConfirm();
-            };
-            cancelBtn.onclick = close;
+            document.getElementById('confirm-ok-btn').onclick = () => { close(); onConfirm(); };
+            document.getElementById('confirm-cancel-btn').onclick = close;
 
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95');
-                content.classList.add('scale-100');
-            }, 10);
+            setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
         }
 
         function deleteCategory(id) {
-            showConfirm(
-                "카테고리 삭제", 
-                "정말 이 카테고리를 삭제하시겠습니까? 저장된 모든 링크가 함께 삭제됩니다.",
-                () => {
-                    categories = categories.filter(cat => cat.id !== id);
-                    if (selectedCategoryId === id) {
-                        selectedCategoryId = null;
-                    }
-                    saveData();
-                    showToast('카테고리가 삭제되었습니다.', 'info');
-                }
-            );
+            showConfirm("카테고리 삭제", "정말 이 카테고리를 삭제하시겠습니까?", () => {
+                categories = categories.filter(cat => cat.id !== id);
+                if (selectedCategoryId === id) selectedCategoryId = null;
+                saveData();
+                showToast('카테고리가 삭제되었습니다.', 'info');
+            });
         }
 
         let currentMetadata = null;
 
         function openBookmarkModal(categoryId, bookmarkId = null) {
-            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) {
-                showToast('구글 로그인 후 북마크를 이용하실 수 있습니다.', 'warning');
-                return;
-            }
-
+            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) return;
             document.getElementById('target-category-id').value = categoryId;
             document.getElementById('edit-bookmark-id').value = bookmarkId || '';
-            
             const modalTitle = document.getElementById('bookmark-modal-title');
             const saveBtnText = document.getElementById('btn-save-text');
-            
             document.getElementById('url-error').classList.add('hidden');
             
             if (bookmarkId) {
                 modalTitle.textContent = '북마크 수정';
                 saveBtnText.innerHTML = '<i class="fas fa-save"></i> 수정하기';
-                
                 const category = categories.find(c => c.id === categoryId);
                 const bookmark = category.bookmarks.find(b => b.id === bookmarkId);
-                
                 document.getElementById('bookmark-url').value = bookmark.url;
                 document.getElementById('bookmark-title').value = bookmark.title;
                 document.getElementById('bookmark-desc').value = bookmark.desc;
-                
-                currentMetadata = {
-                    title: bookmark.title,
-                    description: bookmark.desc,
-                    image: bookmark.image,
-                    domain: bookmark.domain
-                };
-                
+                currentMetadata = { title: bookmark.title, description: bookmark.desc, image: bookmark.image, domain: bookmark.domain };
                 if (bookmark.image && bookmark.image !== 'null') {
                     document.getElementById('preview-img').src = bookmark.image;
                 } else {
@@ -773,15 +938,12 @@
                     const color = stringToColor(bookmark.domain || bookmark.url);
                     document.getElementById('preview-img').src = `https://placehold.co/400x300/${color.replace('#','')}/FFFFFF?text=${domainInitials}`;
                 }
-                
                 document.getElementById('preview-title').textContent = bookmark.title || bookmark.url;
                 document.getElementById('preview-domain').textContent = bookmark.domain;
                 document.getElementById('preview-area').classList.remove('hidden');
-                
             } else {
                 modalTitle.textContent = '새 북마크 추가';
                 saveBtnText.innerHTML = '<i class="fas fa-save"></i> 저장하기';
-                
                 document.getElementById('bookmark-url').value = '';
                 document.getElementById('bookmark-title').value = '';
                 document.getElementById('bookmark-desc').value = '';
@@ -791,7 +953,6 @@
             
             const modal = document.getElementById('bookmark-modal');
             const content = document.getElementById('bookmark-modal-content');
-            
             modal.classList.remove('hidden');
             setTimeout(() => {
                 content.classList.remove('scale-95');
@@ -803,42 +964,28 @@
         function closeBookmarkModal() {
             const modal = document.getElementById('bookmark-modal');
             const content = document.getElementById('bookmark-modal-content');
-            
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
-            
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
+            setTimeout(() => { modal.classList.add('hidden'); }, 200);
         }
 
         function openDataModal() {
             const modal = document.getElementById('data-modal');
             const content = document.getElementById('data-modal-content');
-            if (!modal || !content) return;
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95');
-                content.classList.add('scale-100');
-            }, 10);
+            setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
         }
 
         function closeDataModal() {
             const modal = document.getElementById('data-modal');
             const content = document.getElementById('data-modal-content');
-            if (!modal || !content) return;
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
+            setTimeout(() => { modal.classList.add('hidden'); }, 200);
         }
 
         function exportDataToJson() {
-            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) {
-                showToast('로그인 후 백업 기능을 이용하실 수 있습니다.', 'warning');
-                return;
-            }
+            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) return;
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(categories, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
@@ -850,10 +997,7 @@
         }
 
         function importDataFromJson(event) {
-            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) {
-                showToast('로그인 후 백업 불러오기 기능을 이용하실 수 있습니다.', 'warning');
-                return;
-            }
+            if (!window.isUserLoggedIn || !window.isUserLoggedIn()) return;
             const fileReader = new FileReader();
             fileReader.onload = function(e) {
                 try {
@@ -863,42 +1007,24 @@
                         saveData();
                         showToast('데이터를 성공적으로 불러왔습니다.', 'success');
                         closeDataModal();
-                    } else {
-                        throw new Error('Invalid format');
                     }
                 } catch (err) {
                     showToast('올바르지 않은 백업 파일 형식입니다.', 'error');
                 }
             };
-            if (event.target.files && event.target.files[0]) {
-                fileReader.readAsText(event.target.files[0]);
-            }
+            if (event.target.files && event.target.files[0]) fileReader.readAsText(event.target.files[0]);
         }
 
         function isValidUrl(string) {
-            try {
-                new URL(string);
-                return true;
-            } catch (_) {
-                return false;  
-            }
+            try { new URL(string); return true; } catch (_) { return false; }
         }
 
         async function fetchMetadata(url) {
             if (!url) return;
-            
-            if (!/^https?:\/\//i.test(url)) {
-                url = 'http://' + url;
-                document.getElementById('bookmark-url').value = url;
-            }
-
-            if (!isValidUrl(url)) {
-                document.getElementById('url-error').classList.remove('hidden');
-                return;
-            }
+            if (!/^https?:\/\//i.test(url)) { url = 'http://' + url; document.getElementById('bookmark-url').value = url; }
+            if (!isValidUrl(url)) { document.getElementById('url-error').classList.remove('hidden'); return; }
             
             document.getElementById('url-error').classList.add('hidden');
-            
             const loading = document.getElementById('loading-indicator');
             const previewArea = document.getElementById('preview-area');
             const btnSave = document.getElementById('btn-save-bookmark');
@@ -911,23 +1037,13 @@
             try {
                 const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(url)}`;
                 const response = await fetch(apiUrl);
-                
-                if (!response.ok) throw new Error('API Request Failed');
-                
                 const data = await response.json();
                 
                 if (data.status === 'success') {
                     const result = data.data;
-                    currentMetadata = {
-                        title: result.title || '',
-                        description: result.description || '',
-                        image: result.image?.url || '',
-                        domain: new URL(url).hostname.replace('www.', '')
-                    };
-                    
+                    currentMetadata = { title: result.title || '', description: result.description || '', image: result.image?.url || '', domain: new URL(url).hostname.replace('www.', '') };
                     const titleInput = document.getElementById('bookmark-title');
                     const descInput = document.getElementById('bookmark-desc');
-                    
                     if (!titleInput.value) titleInput.value = currentMetadata.title;
                     if (!descInput.value) descInput.value = currentMetadata.description;
                     
@@ -938,23 +1054,12 @@
                         const color = stringToColor(currentMetadata.domain);
                         document.getElementById('preview-img').src = `https://placehold.co/400x300/${color.replace('#','')}/FFFFFF?text=${domainInitials}`;
                     }
-                    
                     document.getElementById('preview-title').textContent = currentMetadata.title || url;
                     document.getElementById('preview-domain').textContent = currentMetadata.domain;
-                    
                     previewArea.classList.remove('hidden');
-                } else {
-                    throw new Error('No metadata found');
                 }
             } catch (error) {
-                console.warn("메타데이터를 가져오는데 실패했습니다.", error);
-                currentMetadata = {
-                    title: '',
-                    description: '',
-                    image: '',
-                    domain: new URL(url).hostname.replace('www.', '')
-                };
-                showToast('미리보기를 가져올 수 없습니다. 수동으로 입력해주세요.', 'warning');
+                currentMetadata = { title: '', description: '', image: '', domain: new URL(url).hostname.replace('www.', '') };
             } finally {
                 loading.classList.add('hidden');
                 btnSave.disabled = false;
@@ -969,20 +1074,9 @@
             const title = document.getElementById('bookmark-title').value.trim();
             const desc = document.getElementById('bookmark-desc').value.trim();
             
-            if (!url) {
-                document.getElementById('url-error').classList.remove('hidden');
-                document.getElementById('bookmark-url').focus();
-                return;
-            }
-
-            if (!/^https?:\/\//i.test(url)) {
-                url = 'http://' + url;
-            }
-
-            if (!isValidUrl(url)) {
-                document.getElementById('url-error').classList.remove('hidden');
-                return;
-            }
+            if (!url) { document.getElementById('url-error').classList.remove('hidden'); return; }
+            if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
+            if (!isValidUrl(url)) { document.getElementById('url-error').classList.remove('hidden'); return; }
 
             const categoryIndex = categories.findIndex(c => c.id === categoryId);
             if (categoryIndex === -1) return;
@@ -1006,21 +1100,19 @@
                     showToast('링크가 수정되었습니다.', 'success');
                 }
             } else {
-                const newBookmark = {
+                categories[categoryIndex].bookmarks.unshift({
                     id: generateId(),
                     url: url,
                     title: title || (currentMetadata && currentMetadata.title) || domain,
                     desc: desc || (currentMetadata && currentMetadata.description) || '',
                     image: (currentMetadata && currentMetadata.image) || '',
                     domain: domain,
-                    addedAt: Date.now()
-                };
-
-                categories[categoryIndex].bookmarks.unshift(newBookmark);
+                    addedAt: Date.now(),
+                    isPinned: false
+                });
                 categories[categoryIndex].updatedAt = Date.now();
                 showToast('링크가 저장되었습니다.', 'success');
             }
-            
             saveData();
             closeBookmarkModal();
         }
@@ -1028,40 +1120,26 @@
         function deleteBookmark(categoryId, bookmarkId) {
             const categoryIndex = categories.findIndex(c => c.id === categoryId);
             if (categoryIndex === -1) return;
-
-            showConfirm(
-                "링크 삭제",
-                "이 링크를 삭제하시겠습니까?",
-                () => {
-                    categories[categoryIndex].bookmarks = categories[categoryIndex].bookmarks.filter(b => b.id !== bookmarkId);
-                    categories[categoryIndex].updatedAt = Date.now();
-                    saveData();
-                    showToast('링크가 삭제되었습니다.', 'info');
-                }
-            );
+            showConfirm("링크 삭제", "이 링크를 삭제하시겠습니까?", () => {
+                categories[categoryIndex].bookmarks = categories[categoryIndex].bookmarks.filter(b => b.id !== bookmarkId);
+                categories[categoryIndex].updatedAt = Date.now();
+                saveData();
+                showToast('링크가 삭제되었습니다.', 'info');
+            });
         }
 
         function escapeHtml(unsafe) {
             if (!unsafe) return '';
-            return unsafe
-                 .toString()
-                 .replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
+            return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
         function stringToColor(str) {
             let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            }
+            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
             let color = '#';
             for (let i = 0; i < 3; i++) {
                 const value = (hash >> (i * 8)) & 0xFF;
-                const adjustedValue = Math.max(50, Math.min(200, value));
-                color += ('00' + adjustedValue.toString(16)).substr(-2);
+                color += ('00' + Math.max(50, Math.min(200, value)).toString(16)).substr(-2);
             }
             return color;
         }
@@ -1085,45 +1163,24 @@
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
-
-            try {
-                var successful = document.execCommand('copy');
-                if (successful) {
-                    showToast('링크가 클립보드에 복사되었습니다.', 'success');
-                }
-            } catch (err) {
-                console.error('Copy failed', err);
-            }
+            try { document.execCommand('copy'); showToast('링크가 클립보드에 복사되었습니다.', 'success'); } 
+            catch (err) { console.error('Copy failed', err); }
             document.body.removeChild(textArea);
         }
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
+            let bgClass = 'bg-gray-800', icon = 'fa-info-circle', iconColor = 'text-blue-400';
             
-            let bgClass = 'bg-gray-800';
-            let icon = 'fa-info-circle';
-            let iconColor = 'text-blue-400';
-            
-            if (type === 'success') {
-                icon = 'fa-check-circle';
-                iconColor = 'text-green-400';
-            } else if (type === 'warning') {
-                icon = 'fa-exclamation-triangle';
-                iconColor = 'text-yellow-400';
-            } else if (type === 'error') {
-                icon = 'fa-times-circle';
-                iconColor = 'text-red-400';
-            }
+            if (type === 'success') { icon = 'fa-check-circle'; iconColor = 'text-green-400'; } 
+            else if (type === 'warning') { icon = 'fa-exclamation-triangle'; iconColor = 'text-yellow-400'; } 
+            else if (type === 'error') { icon = 'fa-times-circle'; iconColor = 'text-red-400'; }
 
             toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-white text-sm transform transition-all duration-300 translate-y-10 opacity-0 ${bgClass}`;
-            toast.innerHTML = `
-                <i class="fas ${icon} ${iconColor} text-lg"></i>
-                <span class="font-medium">${escapeHtml(message)}</span>
-            `;
+            toast.innerHTML = `<i class="fas ${icon} ${iconColor} text-lg"></i><span class="font-medium">${escapeHtml(message)}</span>`;
             
             container.appendChild(toast);
-            
             requestAnimationFrame(() => {
                 toast.classList.remove('translate-y-10', 'opacity-0');
                 toast.classList.add('translate-y-0', 'opacity-100');
@@ -1132,15 +1189,9 @@
             setTimeout(() => {
                 toast.classList.remove('translate-y-0', 'opacity-100');
                 toast.classList.add('translate-y-2', 'opacity-0');
-                setTimeout(() => {
-                    if (container.contains(toast)) {
-                        container.removeChild(toast);
-                    }
-                }, 300);
+                setTimeout(() => { if (container.contains(toast)) container.removeChild(toast); }, 300);
             }, 3500);
         }
-
-        window.onload = init;
     </script>
 
     <script type="module">
