@@ -624,7 +624,7 @@
                 gridHtml = `<div class="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300 shadow-sm"><p class="text-gray-400 mb-4 font-medium">아직 스크랩한 정보가 없습니다.</p><button onclick="openBookmarkModal('${category.id}')" class="text-indigo-600 font-bold bg-indigo-50 px-4 py-2 rounded-lg">추가하기</button></div>`;
             } else {
                 // 혼합 레이아웃: Grid 활용하여 여러 크기 카드를 유동적으로 배치
-                gridHtml = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 items-start pb-10">`;
+                gridHtml = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-10">`;
                 const sortedBookmarks = [...category.bookmarks].sort((a, b) => (a.isPinned === b.isPinned) ? 0 : a.isPinned ? -1 : 1);
                 
                 sortedBookmarks.forEach(bm => {
@@ -653,12 +653,12 @@
             const review = bm.review ? `"${escapeHtml(bm.review)}"` : '';
 
             return `
-                <div ${getDragAttributes(categoryId, bm.id)} class="bookmark-card bg-white border ${bm.isPinned?`border-${type==='book'?'amber':'pink'}-400 ring-1 ring-${type==='book'?'amber':'pink'}-200`:'border-gray-200'} rounded-lg overflow-hidden flex flex-col relative group shadow-sm cursor-move hover:shadow-md">
+                <div ${getDragAttributes(categoryId, bm.id)} class="bookmark-card bg-white border ${bm.isPinned?`border-${type==='book'?'amber':'pink'}-400 ring-1 ring-${type==='book'?'amber':'pink'}-200`:'border-gray-200'} rounded-lg overflow-hidden flex flex-col h-full relative group shadow-sm cursor-move hover:shadow-md">
                     ${getPinBadge(bm.isPinned, type==='book'?'bg-amber-500':'bg-pink-500')}
-                    <a href="${escapeHtml(bm.url)}" target="_blank" class="block">
+                    <a href="${escapeHtml(bm.url)}" target="_blank" class="block flex-grow focus:outline-none">
                         <div class="poster-container border-b border-gray-100 bg-gray-900">${imgHtml}</div>
                     </a>
-                    <div class="p-3 flex flex-col flex-grow">
+                    <div class="p-3 flex flex-col h-auto">
                         <h3 class="font-bold text-gray-900 text-[13px] leading-tight line-clamp-2 mb-1" title="${escapeHtml(bm.title)}">${escapeHtml(bm.title||'제목없음')}</h3>
                         <div class="flex gap-0.5 mb-2">${starHtml}</div>
                         <p class="text-[11px] text-gray-600 line-clamp-2 leading-snug flex-grow">${review}</p>
@@ -673,9 +673,9 @@
                 : `<div class="absolute inset-0 flex items-center justify-center bg-emerald-100 text-emerald-500"><i class="fas fa-map-marked-alt text-3xl"></i></div>`;
             
             return `
-                <div ${getDragAttributes(categoryId, bm.id)} class="bookmark-card bg-white border ${bm.isPinned?'border-emerald-400 ring-1 ring-emerald-200':'border-gray-200'} rounded-lg overflow-hidden flex flex-col relative group shadow-sm cursor-move hover:shadow-md">
+                <div ${getDragAttributes(categoryId, bm.id)} class="bookmark-card bg-white border ${bm.isPinned?'border-emerald-400 ring-1 ring-emerald-200':'border-gray-200'} rounded-lg overflow-hidden flex flex-col h-full relative group shadow-sm cursor-move hover:shadow-md">
                     ${getPinBadge(bm.isPinned, 'bg-emerald-500')}
-                    <a href="${escapeHtml(bm.url)}" target="_blank" class="block">
+                    <a href="${escapeHtml(bm.url)}" target="_blank" class="block focus:outline-none">
                         <div class="thumbnail-container border-b border-gray-100">${imgHtml}</div>
                     </a>
                     <div class="p-3 flex flex-col flex-grow">
@@ -701,11 +701,11 @@
                 : `<div class="absolute inset-0 flex flex-col items-center justify-center text-white" style="background-color:${fallbackColor}"> <span class="text-2xl font-bold">${fallbackInitial}</span></div>`;
 
             return `
-                <div ${getDragAttributes(categoryId, bm.id)} class="bookmark-card bg-white border ${bm.isPinned?'border-indigo-400 ring-1 ring-indigo-200':'border-gray-200'} rounded-lg overflow-hidden flex flex-col relative group shadow-sm cursor-move hover:shadow-md">
+                <div ${getDragAttributes(categoryId, bm.id)} class="bookmark-card bg-white border ${bm.isPinned?'border-indigo-400 ring-1 ring-indigo-200':'border-gray-200'} rounded-lg overflow-hidden flex flex-col h-full relative group shadow-sm cursor-move hover:shadow-md">
                     ${getPinBadge(bm.isPinned, 'bg-indigo-600')}
                     <a href="${escapeHtml(bm.url)}" target="_blank" class="block flex-grow focus:outline-none">
                         <div class="thumbnail-container border-b border-gray-100">${imgStr}</div>
-                        <div class="p-3 flex flex-col">
+                        <div class="p-3 flex flex-col h-[90px]">
                             <div class="flex items-center gap-1.5 mb-1.5">
                                 <img src="https://www.google.com/s2/favicons?domain=${bm.domain || new URL(bm.url).hostname}&sz=32" class="w-3.5 h-3.5 rounded-sm opacity-80" onerror="this.style.display='none'">
                                 <span class="text-[10px] text-gray-500 font-medium truncate">${escapeHtml(bm.domain)}</span>
@@ -1114,7 +1114,7 @@
         let unsubscribeSnapshot = null;
 
         const defaultFirebaseConfig = {
-            apiKey: "AIzaSyBFScKLj-kSpOx7ZlD9YPYLeK5y8BPHTX4",
+            apiKey: "AIzaSyBFSckLj-kSpOx7ZLD9YPYLeK5y8BPHTX4",
             authDomain: "bookmark-dashboard-345cc.firebaseapp.com",
             projectId: "bookmark-dashboard-345cc",
             storageBucket: "bookmark-dashboard-345cc.firebasestorage.app",
