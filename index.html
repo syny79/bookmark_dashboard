@@ -99,9 +99,7 @@
             
             <div class="flex items-center gap-2 sm:gap-4">
                 <div id="auth-section" class="flex items-center gap-2">
-                    <button onclick="window.handleGoogleLogin()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer">
-                        <i class="fab fa-google"></i> 구글 로그인
-                    </button>
+                    <!-- Firebase가 상태에 따라 버튼 주입 -->
                 </div>
                 <button onclick="window.openDataModal()" class="px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-2 border border-transparent hover:border-indigo-100 shadow-sm cursor-pointer" title="데이터 관리 및 백업">
                     <i class="fas fa-cloud text-lg"></i> <span class="hidden sm:inline text-sm font-bold">데이터 관리</span>
@@ -142,8 +140,8 @@
                         <option value="google">Google</option>
                         <option value="naver">Naver</option>
                     </select>
-                    <input type="text" id="web-search-input" placeholder="정보 검색 후 바로 저장하세요..." class="w-full px-4 py-2 outline-none text-sm" onkeypress="if(event.key === 'Enter') executeWebSearch()">
-                    <button onclick="executeWebSearch()" class="px-4 py-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer" title="검색하기">
+                    <input type="text" id="web-search-input" placeholder="정보 검색 후 주소를 복사하여 스크랩하세요..." class="w-full px-4 py-2 outline-none text-sm" onkeypress="if(event.key === 'Enter') executeWebSearch()">
+                    <button onclick="executeWebSearch()" class="px-4 py-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer" title="검색 창 열기">
                         <i class="fas fa-search"></i>
                     </button>
                 </div>
@@ -182,24 +180,24 @@
                 <input type="hidden" id="edit-category-id">
                 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">카테고리 유형 (Type) <span class="text-xs text-indigo-500 font-normal ml-1">유형에 따라 뷰(View)가 바뀝니다</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">카테고리 기본 속성 <span class="text-xs text-indigo-500 font-normal ml-1">저장할 기본 스크랩 유형을 선택하세요</span></label>
                     <div class="grid grid-cols-3 gap-2">
                         <label class="cursor-pointer">
                             <input type="radio" name="cat-type" value="web" class="peer sr-only" checked>
-                            <div class="text-center px-2 py-3 border border-gray-200 rounded-lg peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-700 hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-globe mb-1 text-lg"></i><div class="text-xs font-bold">일반 웹</div>
+                            <div class="text-center px-1 py-3 border border-gray-200 rounded-lg peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-700 hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-globe mb-1 text-lg"></i><div class="text-[10px] font-bold">일반 웹</div>
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="cat-type" value="place" class="peer sr-only">
-                            <div class="text-center px-2 py-3 border border-gray-200 rounded-lg peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-700 hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-map-marker-alt mb-1 text-lg"></i><div class="text-xs font-bold">장소/맛집</div>
+                            <div class="text-center px-1 py-3 border border-gray-200 rounded-lg peer-checked:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:text-emerald-700 hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-map-marker-alt mb-1 text-lg"></i><div class="text-[10px] font-bold">장소/맛집</div>
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="cat-type" value="media" class="peer sr-only">
-                            <div class="text-center px-2 py-3 border border-gray-200 rounded-lg peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-700 hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-film mb-1 text-lg"></i><div class="text-xs font-bold">영화/책</div>
+                            <div class="text-center px-1 py-3 border border-gray-200 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-500 peer-checked:text-pink-700 hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-film mb-1 text-lg"></i><div class="text-[10px] font-bold">영화/책</div>
                             </div>
                         </label>
                     </div>
@@ -207,7 +205,7 @@
 
                 <div class="mb-5">
                     <label for="category-name" class="block text-sm font-medium text-gray-700 mb-2">카테고리 이름</label>
-                    <input type="text" id="category-name" placeholder="예: 디자인 레퍼런스, 가고싶은 카페" 
+                    <input type="text" id="category-name" placeholder="예: 맛집 탐방, 읽고싶은 책" 
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                            onkeypress="if(event.key === 'Enter') saveCategory()">
                     <p id="category-error" class="text-red-500 text-xs mt-2 hidden">카테고리 이름을 입력해주세요.</p>
@@ -220,6 +218,7 @@
                     <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-book"><i class="fas fa-book"></i></button>
                     <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-video"><i class="fas fa-video"></i></button>
                     <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-star"><i class="fas fa-star"></i></button>
+                    <button class="icon-btn w-10 h-10 rounded bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200 flex items-center justify-center" data-icon="fa-plane"><i class="fas fa-plane"></i></button>
                 </div>
                 <input type="hidden" id="selected-icon" value="fa-folder">
             </div>
@@ -232,80 +231,82 @@
 
     <!-- 링크/정보 추가 모달 -->
     <div id="bookmark-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop hidden flex items-center justify-center z-50 transition-opacity">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-200" id="bookmark-modal-content">
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-gray-900" id="bookmark-modal-title">새 정보 스크랩</h3>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-200 flex flex-col max-h-[90vh]" id="bookmark-modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+                <h3 class="text-lg font-bold text-gray-900" id="bookmark-modal-title">새 스크랩 추가</h3>
                 <button onclick="closeBookmarkModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            
+            <div class="p-6 overflow-y-auto flex-grow space-y-4">
                 <input type="hidden" id="target-category-id">
                 <input type="hidden" id="edit-bookmark-id">
                 <input type="hidden" id="current-cat-type" value="web">
-                
+
                 <div>
                     <label id="url-label" for="bookmark-url" class="block text-sm font-medium text-gray-700 mb-1">URL 주소 <span class="text-red-500">*</span></label>
                     <input type="url" id="bookmark-url" placeholder="https://example.com" 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                            onblur="fetchMetadata(this.value)">
                     <p id="url-error" class="text-red-500 text-xs mt-1 hidden">유효한 URL을 입력해주세요.</p>
                 </div>
 
+                <!-- 수동 이미지 입력 기능 추가 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">대표 이미지 수동 변경 <span class="text-xs text-gray-400 font-normal">(선택)</span></label>
+                    <input type="url" id="bookmark-manual-image" placeholder="원하는 이미지 주소를 복사하여 붙여넣으세요" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm" oninput="updateManualImagePreview()">
+                    <p class="text-[10px] text-gray-400 mt-1">이미지가 안 뜨거나 썸네일을 직접 바꾸고 싶을 때 사용하세요.</p>
+                </div>
+
                 <!-- 미디어(영화/책) 전용 입력 폼 -->
-                <div id="media-extra-fields" class="hidden bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 space-y-3">
+                <div id="media-extra-fields" class="hidden bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
                     <div>
-                        <label class="block text-sm font-medium text-indigo-900 mb-1">내 평점</label>
-                        <div class="star-rating flex gap-1 text-2xl text-gray-300" id="modal-stars">
-                            <i class="fas fa-star" data-val="1"></i>
-                            <i class="fas fa-star" data-val="2"></i>
-                            <i class="fas fa-star" data-val="3"></i>
-                            <i class="fas fa-star" data-val="4"></i>
-                            <i class="fas fa-star" data-val="5"></i>
+                        <label class="block text-sm font-medium text-gray-800 mb-1">내 평점</label>
+                        <div class="star-rating flex gap-1 text-xl text-gray-300" id="modal-stars">
+                            <i class="fas fa-star" data-val="1"></i><i class="fas fa-star" data-val="2"></i>
+                            <i class="fas fa-star" data-val="3"></i><i class="fas fa-star" data-val="4"></i><i class="fas fa-star" data-val="5"></i>
                         </div>
                         <input type="hidden" id="bookmark-rating" value="0">
                     </div>
                     <div>
-                        <label for="bookmark-review" class="block text-sm font-medium text-indigo-900 mb-1">한줄평 / 스크랩 메모</label>
-                        <input type="text" id="bookmark-review" placeholder="나만의 짧은 감상평을 남겨보세요." 
-                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <label for="bookmark-review" class="block text-sm font-medium text-gray-800 mb-1">한줄 감상평</label>
+                        <input type="text" id="bookmark-review" placeholder="나만의 감상평을 남겨보세요." class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
                 </div>
 
                 <div>
                     <label for="bookmark-title" class="block text-sm font-medium text-gray-700 mb-1" id="title-label">제목 (선택)</label>
-                    <input type="text" id="bookmark-title" placeholder="자동으로 가져옵니다" 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <input type="text" id="bookmark-title" placeholder="자동으로 가져옵니다" class="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
                 <div>
                     <label for="bookmark-desc" class="block text-sm font-medium text-gray-700 mb-1" id="desc-label">설명 (선택)</label>
-                    <textarea id="bookmark-desc" rows="2" placeholder="자동으로 가져옵니다" 
-                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
+                    <textarea id="bookmark-desc" rows="2" placeholder="자동으로 가져옵니다" class="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
                 </div>
                 
-                <div id="preview-area" class="hidden mt-4 border border-gray-200 rounded-lg p-2 bg-gray-50">
-                    <p class="text-xs text-gray-500 mb-2 font-semibold">정보 미리보기</p>
-                    <div class="flex gap-3">
-                        <div class="w-16 h-16 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                            <img id="preview-img" src="" alt="preview" class="w-full h-full object-cover">
+                <div id="preview-area" class="hidden mt-2 border border-gray-200 rounded-lg p-2 bg-gray-50">
+                    <p class="text-[10px] text-gray-500 mb-1.5 font-semibold">정보 미리보기</p>
+                    <div class="flex gap-3 items-center">
+                        <div class="w-14 h-14 bg-gray-200 rounded overflow-hidden flex-shrink-0 relative">
+                            <img id="preview-img" src="" alt="preview" class="absolute inset-0 w-full h-full object-cover">
                         </div>
-                        <div class="overflow-hidden flex flex-col justify-center">
-                            <p id="preview-title" class="text-sm font-bold text-gray-800 truncate"></p>
-                            <p id="preview-domain" class="text-xs text-gray-500 truncate mt-1"></p>
+                        <div class="overflow-hidden flex flex-col flex-grow min-w-0">
+                            <p id="preview-title" class="text-[13px] font-bold text-gray-800 truncate"></p>
+                            <p id="preview-domain" class="text-[11px] text-gray-500 truncate mt-0.5"></p>
                         </div>
                     </div>
                 </div>
 
                 <div id="loading-indicator" class="hidden flex items-center justify-center py-4">
-                    <i class="fas fa-spinner fa-spin text-indigo-500 text-2xl"></i>
+                    <i class="fas fa-spinner fa-spin text-indigo-500 text-xl"></i>
                     <span class="ml-2 text-sm text-gray-600">페이지 정보 가져오는 중...</span>
                 </div>
             </div>
             
-            <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-end gap-3">
+            <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-end gap-3 shrink-0">
                 <button onclick="closeBookmarkModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">취소</button>
                 <button id="btn-save-bookmark" onclick="saveBookmark()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">
-                    <span id="btn-save-text"><i class="fas fa-save"></i> 저장하기</span>
+                    <span id="btn-save-text"><i class="fas fa-save"></i> 스크랩하기</span>
                 </button>
             </div>
         </div>
@@ -322,7 +323,7 @@
                 <input type="hidden" id="move-source-cat-id">
                 <input type="hidden" id="move-target-bm-id">
                 <label class="block text-sm font-medium text-gray-700 mb-2">이동할 목적지 선택</label>
-                <select id="move-target-category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+                <select id="move-target-category" class="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"></select>
             </div>
             <div class="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end gap-3">
                 <button onclick="window.closeMoveModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">취소</button>
@@ -636,13 +637,13 @@
                 const review = bm.review ? `"${escapeHtml(bm.review)}"` : '<span class="text-gray-300 italic">한줄평 없음</span>';
 
                 html += `
-                    <div draggable="true" ondragstart="window.handleDragStart(event, '${category.id}', '${bm.id}')" ondragend="window.handleDragEnd(event)" ondragover="window.handleCardDragOver(event)" ondragleave="window.handleCardDragLeave(event)" ondrop="window.handleCardDrop(event, '${category.id}', '${bm.id}')" class="bookmark-card bg-white border ${bm.isPinned?'border-pink-400 ring-1 ring-pink-200':'border-gray-200'} rounded-lg overflow-hidden flex flex-col relative group shadow-sm cursor-move hover:shadow-md">
+                    <div draggable="true" ondragstart="window.handleDragStart(event, '${category.id}', '${bm.id}')" ondragend="window.handleDragEnd(event)" ondragover="window.handleCardDragOver(event)" ondragleave="window.handleCardDragLeave(event)" ondrop="window.handleCardDrop(event, '${category.id}', '${bm.id}')" class="bookmark-card bg-white border ${bm.isPinned?'border-pink-400 ring-1 ring-pink-200':'border-gray-200'} rounded-lg overflow-hidden flex flex-col h-full relative group shadow-sm cursor-move hover:shadow-md">
                         ${bm.isPinned ? `<div class="absolute top-2 right-2 z-10 bg-pink-500 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-thumbtack text-[10px]"></i></div>` : ''}
-                        <a href="${escapeHtml(bm.url)}" target="_blank" class="block">
+                        <a href="${escapeHtml(bm.url)}" target="_blank" class="block focus:outline-none">
                             <div class="poster-container border-b border-gray-100 bg-gray-900">${imgHtml}</div>
                         </a>
                         <div class="p-3 flex flex-col flex-grow">
-                            <h3 class="font-bold text-gray-900 text-sm leading-tight line-clamp-1 mb-1" title="${escapeHtml(bm.title)}">${escapeHtml(bm.title||'제목없음')}</h3>
+                            <h3 class="font-bold text-gray-900 text-[13px] leading-tight line-clamp-2 mb-1" title="${escapeHtml(bm.title)}">${escapeHtml(bm.title||'제목없음')}</h3>
                             <div class="flex gap-0.5 mb-2">${starHtml}</div>
                             <p class="text-[11px] text-gray-600 line-clamp-2 leading-snug flex-grow">${review}</p>
                         </div>
@@ -684,7 +685,8 @@
             bookmarks.forEach(bm => {
                 const fallbackColor = stringToColor(bm.domain || bm.url);
                 const fallbackInitial = (bm.domain || bm.title || "?").charAt(0).toUpperCase();
-                const imgStr = bm.image && bm.image !== 'null' ? `<img src="${bm.image}" class="transition-transform duration-500 hover:scale-105" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'absolute inset-0 flex flex-col items-center justify-center text-white\\' style=\\'background-color:${fallbackColor}\\'> <span class=\\'text-2xl font-bold\\'>${fallbackInitial}</span></div>';">` : `<div class="absolute inset-0 flex flex-col items-center justify-center text-white" style="background-color:${fallbackColor}"> <span class="text-2xl font-bold">${fallbackInitial}</span></div>`;
+                const errorAction = `this.onerror=null; this.parentElement.innerHTML='<div class="absolute inset-0 flex flex-col items-center justify-center text-white" style="background-color:${fallbackColor}"> <span class="text-2xl font-bold">${fallbackInitial}</span></div>';`;
+                const imgStr = bm.image && bm.image !== 'null' ? `<img src="${bm.image}" class="transition-transform duration-500 group-hover:scale-105" onerror="${errorAction}">` : `<div class="absolute inset-0 flex flex-col items-center justify-center text-white" style="background-color:${fallbackColor}"> <span class="text-2xl font-bold">${fallbackInitial}</span></div>`;
 
                 html += `
                     <div draggable="true" ondragstart="window.handleDragStart(event, '${category.id}', '${bm.id}')" ondragend="window.handleDragEnd(event)" ondragover="window.handleCardDragOver(event)" ondragleave="window.handleCardDragLeave(event)" ondrop="window.handleCardDrop(event, '${category.id}', '${bm.id}')" class="bookmark-card bg-white border ${bm.isPinned?'border-indigo-400 ring-1 ring-indigo-200':'border-gray-200'} rounded-lg overflow-hidden flex flex-col h-full relative group shadow-sm cursor-move hover:shadow-md">
@@ -710,7 +712,7 @@
         function renderCardFooter(categoryId, bm) {
             const dateStr = new Date(bm.addedAt).toLocaleDateString('ko-KR', { year: '2-digit', month: 'short', day: 'numeric' });
             return `
-                <div class="px-2 py-2 bg-gray-50/80 border-t border-gray-100 flex justify-between items-center mt-auto">
+                <div class="px-2 py-2 bg-gray-50/80 border-t border-gray-100 flex justify-between items-center mt-auto shrink-0">
                     <span class="text-[9px] text-gray-400 font-medium flex items-center gap-1"><i class="far fa-clock"></i>${dateStr}</span>
                     <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 bg-gray-100 rounded-md">
                         <button onclick="window.togglePin(event, '${categoryId}', '${bm.id}')" class="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-indigo-600 hover:bg-gray-200"><i class="fas fa-thumbtack text-[10px]"></i></button>
@@ -721,7 +723,7 @@
                 </div>`;
         }
 
-        // --- 모달 제어 및 로직 ---
+        // --- 카테고리 모달 제어 ---
         function openCategoryModal(categoryId = null) {
             if (!window.isUserLoggedIn || !window.isUserLoggedIn()) return;
             const nameInput = document.getElementById('category-name');
@@ -837,6 +839,7 @@
                 document.getElementById('bookmark-url').value = bookmark.url;
                 document.getElementById('bookmark-title').value = bookmark.title;
                 document.getElementById('bookmark-desc').value = bookmark.desc;
+                document.getElementById('bookmark-manual-image').value = bookmark.manualImage || '';
                 
                 if(type === 'media') {
                     updateStarUI(bookmark.rating || 0);
@@ -845,11 +848,14 @@
                 }
 
                 currentMetadata = { title: bookmark.title, description: bookmark.desc, image: bookmark.image, domain: bookmark.domain };
-                if (bookmark.image && bookmark.image !== 'null') document.getElementById('preview-img').src = bookmark.image;
-                document.getElementById('preview-area').classList.remove('hidden');
+                updateManualImagePreview();
+                document.getElementById('preview-title').textContent = bookmark.title;
+                document.getElementById('preview-domain').textContent = bookmark.domain;
             } else {
                 document.getElementById('bookmark-modal-title').textContent = '새 정보 스크랩';
                 document.getElementById('bookmark-url').value = ''; document.getElementById('bookmark-title').value = ''; document.getElementById('bookmark-desc').value = '';
+                document.getElementById('bookmark-manual-image').value = '';
+                
                 if(type === 'media') { updateStarUI(0); document.getElementById('bookmark-rating').value = 0; document.getElementById('bookmark-review').value = ''; }
                 document.getElementById('preview-area').classList.add('hidden');
                 currentMetadata = null;
@@ -901,10 +907,9 @@
                     if (!document.getElementById('bookmark-title').value) document.getElementById('bookmark-title').value = currentMetadata.title;
                     if (!document.getElementById('bookmark-desc').value) document.getElementById('bookmark-desc').value = currentMetadata.description;
                     
-                    if (currentMetadata.image) document.getElementById('preview-img').src = currentMetadata.image;
+                    updateManualImagePreview();
                     document.getElementById('preview-title').textContent = currentMetadata.title || url;
                     document.getElementById('preview-domain').textContent = currentMetadata.domain;
-                    document.getElementById('preview-area').classList.remove('hidden');
                 }
             } catch (error) {
                 currentMetadata = { title: '', description: '', image: '', domain: new URL(url).hostname.replace('www.', '') };
@@ -912,6 +917,25 @@
                 document.getElementById('loading-indicator').classList.add('hidden');
             }
         }
+        
+        // 수동 입력된 이미지 URL을 우선적으로 미리보기에 반영
+        window.updateManualImagePreview = function() {
+            const manualUrl = document.getElementById('bookmark-manual-image').value.trim();
+            const previewImg = document.getElementById('preview-img');
+            const previewArea = document.getElementById('preview-area');
+            
+            let targetImgUrl = '';
+            if (manualUrl && isValidUrl(manualUrl)) {
+                targetImgUrl = manualUrl;
+            } else if (currentMetadata && currentMetadata.image && currentMetadata.image !== 'null') {
+                targetImgUrl = currentMetadata.image;
+            }
+            
+            if (targetImgUrl) {
+                previewImg.src = targetImgUrl;
+                previewArea.classList.remove('hidden');
+            }
+        };
 
         function saveBookmark() {
             const categoryId = document.getElementById('target-category-id').value;
@@ -920,6 +944,7 @@
             let url = document.getElementById('bookmark-url').value.trim();
             const title = document.getElementById('bookmark-title').value.trim();
             const desc = document.getElementById('bookmark-desc').value.trim();
+            const manualImage = document.getElementById('bookmark-manual-image').value.trim();
             
             if (!url || !isValidUrl(url)) { document.getElementById('url-error').classList.remove('hidden'); return; }
 
@@ -934,11 +959,17 @@
                 review = document.getElementById('bookmark-review').value.trim();
             }
 
+            // 대표 이미지 최우선 결정 로직: 수동 입력 > 자동 획득 
+            let finalImage = '';
+            if (manualImage && isValidUrl(manualImage)) finalImage = manualImage;
+            else if (currentMetadata && currentMetadata.image) finalImage = currentMetadata.image;
+
             const newBmData = {
                 url: url,
                 title: title || (currentMetadata && currentMetadata.title) || domain,
                 desc: desc || (currentMetadata && currentMetadata.description) || '',
-                image: (currentMetadata && currentMetadata.image) || '',
+                image: finalImage,
+                manualImage: manualImage, // 수동 입력값 보존
                 domain: domain,
                 rating: rating,
                 review: review
@@ -947,7 +978,10 @@
             if (editBookmarkId) {
                 const bmIdx = categories[catIdx].bookmarks.findIndex(b => b.id === editBookmarkId);
                 if (bmIdx > -1) {
-                    newBmData.image = (currentMetadata && currentMetadata.image !== undefined) ? currentMetadata.image : categories[catIdx].bookmarks[bmIdx].image;
+                    // 수동 이미지도 없고, 새로 가져온 정보도 없는데 기존 이미지가 있었다면 보존
+                    if(!finalImage && categories[catIdx].bookmarks[bmIdx].image && !manualImage) {
+                         newBmData.image = categories[catIdx].bookmarks[bmIdx].image;
+                    }
                     categories[catIdx].bookmarks[bmIdx] = { ...categories[catIdx].bookmarks[bmIdx], ...newBmData };
                 }
             } else {
