@@ -450,7 +450,7 @@
             const query = input.value.trim();
             if (!query) { showToast('검색어를 입력해주세요.', 'warning'); input.focus(); return; }
             let searchUrl = engine === 'google' ? `https://www.google.com/search?q=${encodeURIComponent(query)}` : `https://search.naver.com/search.naver?query=${encodeURIComponent(query)}`;
-            window.open(searchUrl, '_blank');
+            window.open(searchUrl, '_blank', 'noopener,noreferrer');
         };
 
         window.saveSearchAsBookmark = function() {
@@ -646,7 +646,7 @@
         function renderMediaCards(category, bookmarks) {
             let html = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-10">`;
             bookmarks.forEach(bm => {
-                const imgHtml = bm.image && bm.image !== 'null' ? `<img src="${bm.image}" class="transition-transform duration-500 group-hover:scale-105" onerror="this.src='https://placehold.co/400x600/eeeeee/999999?text=No+Poster';">` : `<div class="absolute inset-0 flex items-center justify-center bg-gray-200 text-gray-400"><i class="fas fa-film text-3xl"></i></div>`;
+                const imgHtml = bm.image && bm.image !== 'null' ? `<img src="${escapeHtml(bm.image)}" class="transition-transform duration-500 group-hover:scale-105" onerror="this.src='https://placehold.co/400x600/eeeeee/999999?text=No+Poster';">` : `<div class="absolute inset-0 flex items-center justify-center bg-gray-200 text-gray-400"><i class="fas fa-film text-3xl"></i></div>`;
                 const rating = bm.rating || 0;
                 let starHtml = '';
                 for(let i=1; i<=5; i++) { starHtml += `<i class="fas fa-star ${i<=rating ? 'text-yellow-400' : 'text-gray-300'} text-[10px]"></i>`; }
@@ -655,7 +655,7 @@
                 html += `
                     <div draggable="true" ondragstart="window.handleDragStart(event, '${category.id}', '${bm.id}')" ondragend="window.handleDragEnd(event)" ondragover="window.handleCardDragOver(event)" ondragleave="window.handleCardDragLeave(event)" ondrop="window.handleCardDrop(event, '${category.id}', '${bm.id}')" class="bookmark-card bg-white border ${bm.isPinned?'border-pink-400 ring-1 ring-pink-200':'border-gray-200'} rounded-lg overflow-hidden flex flex-col relative group shadow-sm cursor-move hover:shadow-md">
                         ${bm.isPinned ? `<div class="absolute top-2 right-2 z-10 bg-pink-500 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-thumbtack text-[10px]"></i></div>` : ''}
-                        <a href="${escapeHtml(bm.url)}" target="_blank" class="block">
+                        <a href="${escapeHtml(bm.url)}" target="_blank" rel="noopener noreferrer" class="block">
                             <div class="poster-container border-b border-gray-100 bg-gray-900">${imgHtml}</div>
                         </a>
                         <div class="p-3 flex flex-col flex-grow">
@@ -673,7 +673,7 @@
         function renderPlaceCards(category, bookmarks) {
             let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-10">`;
             bookmarks.forEach(bm => {
-                const imgHtml = bm.image && bm.image !== 'null' ? `<img src="${bm.image}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/150x150/eeeeee/999999?text=Map';">` : `<div class="w-full h-full bg-emerald-100 text-emerald-500 flex items-center justify-center"><i class="fas fa-map-marked-alt text-2xl"></i></div>`;
+                const imgHtml = bm.image && bm.image !== 'null' ? `<img src="${escapeHtml(bm.image)}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/150x150/eeeeee/999999?text=Map';">` : `<div class="w-full h-full bg-emerald-100 text-emerald-500 flex items-center justify-center"><i class="fas fa-map-marked-alt text-2xl"></i></div>`;
                 
                 html += `
                     <div draggable="true" ondragstart="window.handleDragStart(event, '${category.id}', '${bm.id}')" ondragend="window.handleDragEnd(event)" ondragover="window.handleCardDragOver(event)" ondragleave="window.handleCardDragLeave(event)" ondrop="window.handleCardDrop(event, '${category.id}', '${bm.id}')" class="bookmark-card bg-white border ${bm.isPinned?'border-emerald-400 ring-1 ring-emerald-200':'border-gray-200'} rounded-xl overflow-hidden flex flex-col relative group shadow-sm cursor-move hover:shadow-md">
@@ -685,7 +685,7 @@
                                 <p class="text-xs text-gray-500 line-clamp-2 mb-2 flex items-start gap-1"><i class="fas fa-map-pin mt-0.5 text-gray-400"></i> ${escapeHtml(bm.desc||'주소/설명 없음')}</p>
                                 
                                 <div class="mt-auto flex justify-between items-center">
-                                    <a href="${escapeHtml(bm.url)}" target="_blank" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded hover:bg-emerald-100 transition-colors flex items-center gap-1"><i class="fas fa-external-link-alt"></i> 지도 열기</a>
+                                    <a href="${escapeHtml(bm.url)}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded hover:bg-emerald-100 transition-colors flex items-center gap-1"><i class="fas fa-external-link-alt"></i> 지도 열기</a>
                                 </div>
                             </div>
                         </div>
@@ -701,17 +701,18 @@
             bookmarks.forEach(bm => {
                 const fallbackColor = stringToColor(bm.domain || bm.url);
                 const fallbackInitial = (bm.domain || bm.title || "?").charAt(0).toUpperCase();
-                const imgStr = bm.image && bm.image !== 'null' ? `<img src="${bm.image}" class="transition-transform duration-500 hover:scale-105" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'absolute inset-0 flex flex-col items-center justify-center text-white\\' style=\\'background-color:${fallbackColor}\\'> <span class=\\'text-2xl font-bold\\'>${fallbackInitial}</span></div>';">` : `<div class="absolute inset-0 flex flex-col items-center justify-center text-white" style="background-color:${fallbackColor}"> <span class="text-2xl font-bold">${fallbackInitial}</span></div>`;
+                const safeDomain = escapeHtml(bm.domain || (function(){ try { return new URL(bm.url).hostname; } catch(e){ return ''; } })());
+                const imgStr = bm.image && bm.image !== 'null' ? `<img src="${escapeHtml(bm.image)}" class="transition-transform duration-500 hover:scale-105" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'absolute inset-0 flex flex-col items-center justify-center text-white\\' style=\\'background-color:${fallbackColor}\\'> <span class=\\'text-2xl font-bold\\'>${fallbackInitial}</span></div>';">` : `<div class="absolute inset-0 flex flex-col items-center justify-center text-white" style="background-color:${fallbackColor}"> <span class="text-2xl font-bold">${fallbackInitial}</span></div>`;
 
                 html += `
                     <div draggable="true" ondragstart="window.handleDragStart(event, '${category.id}', '${bm.id}')" ondragend="window.handleDragEnd(event)" ondragover="window.handleCardDragOver(event)" ondragleave="window.handleCardDragLeave(event)" ondrop="window.handleCardDrop(event, '${category.id}', '${bm.id}')" class="bookmark-card bg-white border ${bm.isPinned?'border-indigo-400 ring-1 ring-indigo-200':'border-gray-200'} rounded-lg overflow-hidden flex flex-col h-full relative group shadow-sm cursor-move hover:shadow-md">
                         ${bm.isPinned ? `<div class="absolute top-2 right-2 z-10 bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-thumbtack text-[10px]"></i></div>` : ''}
-                        <a href="${escapeHtml(bm.url)}" target="_blank" class="block flex-grow focus:outline-none">
+                        <a href="${escapeHtml(bm.url)}" target="_blank" rel="noopener noreferrer" class="block flex-grow focus:outline-none">
                             <div class="thumbnail-container border-b border-gray-100">${imgStr}</div>
                             <div class="p-3 flex flex-col h-[90px]">
                                 <div class="flex items-center gap-1.5 mb-1.5">
-                                    <img src="https://www.google.com/s2/favicons?domain=${bm.domain || new URL(bm.url).hostname}&sz=32" class="w-3.5 h-3.5 rounded-sm opacity-80" onerror="this.style.display='none'">
-                                    <span class="text-[10px] text-gray-500 font-medium truncate">${escapeHtml(bm.domain)}</span>
+                                    <img src="https://www.google.com/s2/favicons?domain=${safeDomain}&sz=32" class="w-3.5 h-3.5 rounded-sm opacity-80" onerror="this.style.display='none'">
+                                    <span class="text-[10px] text-gray-500 font-medium truncate">${safeDomain}</span>
                                 </div>
                                 <h3 class="font-bold text-gray-800 text-[12px] leading-snug line-clamp-2 mb-1 group-hover:text-indigo-600" title="${escapeHtml(bm.title)}">${escapeHtml(bm.title || bm.url)}</h3>
                                 <p class="text-[10px] text-gray-400 line-clamp-2">${escapeHtml(bm.desc || '')}</p>
@@ -1080,7 +1081,7 @@
         function deleteCategory(id) { showConfirm("카테고리 삭제", "모든 내용이 삭제됩니다.", () => { categories = categories.filter(cat => cat.id !== id); if(selectedCategoryId === id) selectedCategoryId = null; saveData(); }); }
 
         // 유틸리티
-        function isValidUrl(s) { try { new URL(s); return true; } catch (_) { return false; } }
+        function isValidUrl(s) { try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch (_) { return false; } }
         function escapeHtml(s) { return s?s.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"):''; }
         function stringToColor(str) { let h=0,c='#'; for(let i=0;i<str.length;i++) h=str.charCodeAt(i)+((h<<5)-h); for(let i=0;i<3;i++) c+=('00'+Math.max(50,Math.min(200,(h>>(i*8))&0xFF)).toString(16)).substr(-2); return c; }
         function showToast(message, type = 'success') {
@@ -1099,8 +1100,25 @@
             const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(categories, null, 2)); a.download = "scrapbook_backup.json";
             document.body.appendChild(a); a.click(); a.remove(); showToast('백업 완료');
         };
+        function isValidCategoriesData(data) {
+            if (!Array.isArray(data)) return false;
+            return data.every(cat =>
+                cat && typeof cat === 'object' &&
+                typeof cat.id === 'string' &&
+                typeof cat.name === 'string' &&
+                Array.isArray(cat.bookmarks) &&
+                cat.bookmarks.every(bm => bm && typeof bm === 'object' && typeof bm.id === 'string' && typeof bm.url === 'string')
+            );
+        }
         window.importDataFromJson = (e) => {
-            const r = new FileReader(); r.onload = (e) => { try { categories = JSON.parse(e.target.result); saveData(); window.closeDataModal(); showToast('복원 완료'); } catch(err){ showToast('파일 오류', 'error'); }};
+            const r = new FileReader();
+            r.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (!isValidCategoriesData(parsed)) { showToast('백업 파일 형식이 올바르지 않습니다.', 'error'); return; }
+                    categories = parsed; saveData(); window.closeDataModal(); showToast('복원 완료');
+                } catch(err){ showToast('파일 오류', 'error'); }
+            };
             if(e.target.files[0]) r.readAsText(e.target.files[0]);
         };
     </script>
@@ -1171,7 +1189,7 @@
             }
         }
         
-        async function handleGoogleLogout() { try { await signOut(auth); showToast('로그아웃 됨', 'info'); } catch (error) {} }
+        async function handleGoogleLogout() { try { await signOut(auth); showToast('로그아웃 됨', 'info'); } catch (error) { showToast('로그아웃 실패: ' + error.message, 'error'); } }
 
         function listenToCloudChanges(userId) {
             if (!db) return;
