@@ -193,7 +193,7 @@
                         <label class="cursor-pointer">
                             <input type="radio" name="cat-type" value="place" class="peer sr-only">
                             <div class="text-center px-2 py-3 border border-gray-200 rounded-lg peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-700 hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-map-marker-alt mb-1 text-lg"></i><div class="text-xs font-bold">장소</div>
+                                <i class="fas fa-map-marker-alt mb-1 text-lg"></i><div class="text-xs font-bold">장소/맛집</div>
                             </div>
                         </label>
                         <label class="cursor-pointer">
@@ -869,7 +869,7 @@
                 // 저장된 수동 이미지 URL이 있으면 불러오기
                 document.getElementById('bookmark-image').value = bookmark.image && bookmark.image !== 'null' ? bookmark.image : ''; 
                 
-                if(type === 'media') {
+                if(type === 'movie' || type === 'book' || type === 'media') {
                     updateStarUI(bookmark.rating || 0);
                     document.getElementById('bookmark-rating').value = bookmark.rating || 0;
                     document.getElementById('bookmark-review').value = bookmark.review || '';
